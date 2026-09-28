@@ -1,0 +1,92 @@
+[
+  {
+    "date": "20-May-2025 11:30 AM",
+    "user": "John Smith",
+    "role": "AP Analyst",
+    "activity": "Reconciliation Submitted",
+    "entityType": "Reconciliation",
+    "entityId": "STR-2025-0001245",
+    "details": "Submitted for approval"
+  },
+  {
+    "date": "20-May-2025 11:32 AM",
+    "user": "Emily Davis",
+    "role": "AP Analyst",
+    "activity": "AI Recommendation Accepted",
+    "entityType": "Exception",
+    "entityId": "EXC-2025-000563",
+    "details": "Accepted match to INV-88795"
+  },
+  {
+    "date": "20-May-2025 11:33 AM",
+    "user": "John Smith",
+    "role": "AP Analyst",
+    "activity": "Exception Updated",
+    "entityType": "Exception",
+    "entityId": "EXC-2025-000563",
+    "details": "Status changed to In Progress"
+  },
+  {
+    "date": "20-May-2025 11:35 AM",
+    "user": "System",
+    "role": "System",
+    "activity": "Email Sent",
+    "entityType": "Communication",
+    "entityId": "COMM-2025-7880",
+    "details": "Request for Invoice Copy"
+  },
+  {
+    "date": "20-May-2025 11:40 AM",
+    "user": "Sarah Wilson",
+    "role": "Team Lead",
+    "activity": "Reconciliation Approved",
+    "entityType": "Reconciliation",
+    "entityId": "STR-2025-0001245",
+    "details": "Approved"
+  },
+  {
+    "date": "20-May-2025 11:45 AM",
+    "user": "Michael Brown",
+    "role": "Finance Manager",
+    "activity": "Exception Reviewed",
+    "entityType": "Exception",
+    "entityId": "EXC-2025-000571",
+    "details": "Reviewed and escalated"
+  },
+  {
+    "date": "20-May-2025 11:50 AM",
+    "user": "Emily Davis",
+    "role": "AP Analyst",
+    "activity": "Attachment Uploaded",
+    "entityType": "Communication",
+    "entityId": "COMM-2025-7881",
+    "details": "Uploaded supplier invoice copy"
+  },
+  {
+    "date": "20-May-2025 11:55 AM",
+    "user": "Sarah Wilson",
+    "role": "Team Lead",
+    "activity": "Workflow Approved",
+    "entityType": "Approval",
+    "entityId": "APR-2025-009812",
+    "details": "Approved exception resolution"
+  },
+  {
+    "date": "20-May-2025 12:00 PM",
+    "user": "John Smith",
+    "role": "AP Analyst",
+    "activity": "Comment Added",
+    "entityType": "Reconciliation",
+    "entityId": "STR-2025-0001246",
+    "details": "Requested clarification on amount variance"
+  },
+  {
+    "date": "20-May-2025 12:05 PM",
+    "user": "System",
+    "role": "System",
+    "activity": "Reminder Sent",
+    "entityType": "Communication",
+    "entityId": "COMM-2025-7882",
+    "details": "Reminder to approve pending exception"
+  }
+]

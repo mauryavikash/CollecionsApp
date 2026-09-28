@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1,
+    "vendor": "Northwind Traders",
+    "period": "May 2025",
+    "type": "Invoice",
+    "reference": "INV-83765",
+    "date": "12-May-2025",
+    "statementAmount": 1250.00,
+    "erpAmount": 1250.00,
+    "status": "Matched",
+    "confidence": "98%"
+  },
+  {
+    "id": 2,
+    "vendor": "Contoso Ltd.",
+    "period": "May 2025",
+    "type": "Payment",
+    "reference": "PAY-55412",
+    "date": "14-May-2025",
+    "statementAmount": 2800.00,
+    "erpAmount": 2800.00,
+    "status": "Matched",
+    "confidence": "95%"
+  },
+  {
+    "id": 3,
+    "vendor": "Fabrikam Inc.",
+    "period": "May 2025",
+    "type": "Invoice",
+    "reference": "INV-99231",
+    "date": "16-May-2025",
+    "statementAmount": 3450.00,
+    "erpAmount": 3450.00,
+    "status": "Partially Matched",
+    "confidence": "70%"
+  },
+  {
+    "id": 4,
+    "vendor": "Adventure Works",
+    "period": "May 2025",
+    "type": "Credit Note",
+    "reference": "CRN-77891",
+    "date": "18-May-2025",
+    "statementAmount": -650.00,
+    "erpAmount": -650.00,
+    "status": "Matched",
+    "confidence": "96%"
+  },
+  {
+    "id": 5,
+    "vendor": "Northwind Traders",
+    "period": "May 2025",
+    "type": "Invoice",
+    "reference": "INV-100234",
+    "date": "19-May-2025",
+    "statementAmount": 1100.00,
+    "erpAmount": null,
+    "status": "Unmatched",
+    "confidence": "-"
+  },
+  {
+    "id": 6,
+    "vendor": "Contoso Ltd.",
+    "period": "May 2025",
+    "type": "Payment",
+    "reference": "PAY-66578",
+    "date": "20-May-2025",
+    "statementAmount": 1100.00,
+    "erpAmount": null,
+    "status": "Unmatched",
+    "confidence": "-"
+  },
+  {
+    "id": 7,
+    "vendor": "Fabrikam Inc.",
+    "period": "May 2025",
+    "type": "Invoice",
+    "reference": "INV-100567",
+    "date": "21-May-2025",
+    "statementAmount": 2100.00,
+    "erpAmount": 2100.00,
+    "status": "Matched",
+    "confidence": "93%"
+  }
+]

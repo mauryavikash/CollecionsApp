@@ -1,0 +1,79 @@
+{
+  "rfq_id": "RFQ_134",
+  "updated_at": "2026-01-16T18:52:16.689637+05:30",
+  "received_at": "2026-06-04 09:15 AM",
+  "overall_status": "success",
+  "checkpoints": {
+    "mail_received": {
+      "status": "success",
+      "updated_at": "2026-01-16T18:52:16.689637+05:30",
+      "subject": "EMJ - CHARLOTTE Sales Quote # 1606448",
+      "from": "JMallett@emjmetals.com",
+      "to": "Michael Tock <tockm@STOCKCARSTEEL.COM>",
+      "received_at": "2026-05-18T16:45:00+05:30",
+      "body_content": "<html><head><meta http-equiv=\"Content-Type\"></head><body><strong>Good morning!!</strong><p>Please quote for the attached products.</p></body></html>",
+      "attachments": [
+        {
+          "file_name": "Quote_1606448_20260401044449.pdf",
+          "download_url": "https://company.com",
+          "inline_render_url": "https://company.com"
+        }
+      ]
+    },
+    "customer_identification": {
+      "status": "success",
+      "updated_at": "2026-01-16T18:52:16.689637+05:30",
+      "verification_source": "Customer identified and verified in system via Customer Search API",
+      "id": "CUST-8473",
+      "email": "purchasing@globalsupplies.com",
+      "account_status": "Active",
+      "customer_name": "John Miller",
+      "company": "Acme Industries Ltd."
+    },
+    "product_extracted": {
+      "status": "success",
+      "updated_at": "2026-01-16T18:52:16.689637+05:30",
+      "summary_message": "Items extracted and products matched successfully",
+      "product_list": [
+        {
+          "item_id": 1,
+          "description": "DOM Round Tubing, 0.375 OD x 0.058 Wall, ASTM A-513 Type 5, 24 ft length",
+          "match_status": "success",
+          "stock_status": "In Stock",
+          "sku": "BRG-SKF-6205-2RS",
+          "quantity_requested": 250,
+          "quantity_in_stock": 250,
+          "lead_time_days": 10,
+          "uom": "E",
+          "ai_confidence_score": 94
+        }
+      ]
+    },
+    "quote_generated": {
+      "status": "success",
+      "updated_at": "2026-01-16T19:00:00.000000+05:30",
+      "summary_message": "Quote created with pricing and inventory - Step 4",
+      "quote_id": "QTE-2026-0547",
+      "generated_date": "2026-05-21T14:32:00+05:30",
+      "valid_until": "2026-06-20T14:32:00+05:30",
+      "payment_terms": "Net 30",
+      "json_quote": "",
+      "erp_payload_link": "https://company.com",
+      "erp_download_link": "https://company.com"
+    },
+    "quote_sent": {
+      "status": "success",
+      "updated_at": "2026-06-04T09:15:00+05:30",
+      "to": "purchasing@globalsupplies.com",
+      "subject": "Quote QTE-2026-0547 - Industrial Parts",
+      "sent_at": "2026-06-04T09:15:00+05:30",
+      "body_content": "Dear Global Supplies Co., \n\nThank you for your request for RFQ. Please find the attached RFQ for reference.",
+      "attachments": [
+        {
+          "file_name": "EMJ - CHARLOTTE Sales RFQ # 1606448.pdf",
+          "download_url": "https://company.com"
+        }
+      ]
+    }
+  }
+}

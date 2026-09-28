@@ -1,0 +1,296 @@
+{
+  "title": "Monthly KPI Dashboard",
+  "lastUpdated": "Apr 2026",
+  "kpis": [
+    {
+      "label": "Statements Received",
+      "value": "1,245",
+      "change": "12.5% vs Apr 2026",
+      "isTrendPositive": true,
+      "icon": "FileText"
+    },
+    {
+      "label": "Reconciliations Completed",
+      "value": "1,032",
+      "change": "18.3% vs Apr 2026",
+      "isTrendPositive": true,
+      "icon": "CheckCircle2"
+    },
+    {
+      "label": "Match Rate",
+      "value": "87.6%",
+      "change": "5.2% vs Apr 2026",
+      "isTrendPositive": true,
+      "icon": "Target"
+    },
+    {
+      "label": "Automation Rate",
+      "value": "78.3%",
+      "change": "7.8% vs Apr 2026",
+      "isTrendPositive": true,
+      "icon": "Cpu"
+    },
+    {
+      "label": "Open Exceptions",
+      "value": "213",
+      "change": "8.1% vs Apr 2026",
+      "isTrendPositive": false,
+      "icon": "AlertTriangle"
+    },
+    {
+      "label": "Avg. Cycle Time",
+      "value": "12.4 Days",
+      "change": "22% vs Apr 2026",
+      "isTrendPositive": false,
+      "icon": "Clock"
+    }
+  ],
+  "financialKpis": [
+    {
+      "label": "Total Statement Amount",
+      "value": "USD 125.43M",
+      "change": "14.2% vs Apr 2025",
+      "isTrendPositive": true,
+      "icon": "FileSpreadsheet",
+      "iconColor": "text-blue-500",
+      "iconBgColor": "bg-blue-50 dark:bg-blue-950/40"
+    },
+    {
+      "label": "Total Open Amount",
+      "value": "USD 12.98M",
+      "change": "6.8% vs Apr 2025",
+      "isTrendPositive": true,
+      "icon": "FolderOpen",
+      "iconColor": "text-sky-500",
+      "iconBgColor": "bg-sky-50 dark:bg-sky-950/40"
+    },
+    {
+      "label": "Overdue Amount",
+      "value": "USD 3.45M",
+      "change": "4.3% vs Apr 2025",
+      "isTrendPositive": false,
+      "icon": "History",
+      "iconColor": "text-rose-500",
+      "iconBgColor": "bg-rose-50 dark:bg-rose-950/40"
+    },
+    {
+      "label": "Credit Balance",
+      "value": "USD 1.23M",
+      "change": "9.1% vs Apr 2025",
+      "isTrendPositive": true,
+      "icon": "CreditCard",
+      "iconColor": "text-emerald-500",
+      "iconBgColor": "bg-emerald-50 dark:bg-emerald-950/40"
+    }
+  ],
+  "trendData": [
+    {
+      "name": "Mon",
+      "matched": 120,
+      "exceptions": 12,
+      "open": 34
+    },
+    {
+      "name": "Tue",
+      "matched": 150,
+      "exceptions": 18,
+      "open": 31
+    },
+    {
+      "name": "Wed",
+      "matched": 180,
+      "exceptions": 15,
+      "open": 29
+    },
+    {
+      "name": "Thu",
+      "matched": 170,
+      "exceptions": 20,
+      "open": 26
+    },
+    {
+      "name": "Fri",
+      "matched": 210,
+      "exceptions": 11,
+      "open": 22
+    },
+    {
+      "name": "Sat",
+      "matched": 220,
+      "exceptions": 8,
+      "open": 19
+    },
+    {
+      "name": "Sun",
+      "matched": 234,
+      "exceptions": 5,
+      "open": 15
+    }
+  ],
+  "progressData": [
+    {
+      "name": "Matched",
+      "value": 71
+    },
+    {
+      "name": "Open",
+      "value": 19
+    },
+    {
+      "name": "Exceptions",
+      "value": 10
+    }
+  ],
+  "barData": [
+    {
+      "name": "Northwind",
+      "value": 84
+    },
+    {
+      "name": "Contoso",
+      "value": 72
+    },
+    {
+      "name": "Fabrikam",
+      "value": 65
+    },
+    {
+      "name": "Adventure",
+      "value": 91
+    }
+  ],
+  "mockStatements": [
+    {
+      "id": "ST-10021",
+      "vendor": "Northwind Traders",
+      "amount": "$28,450.00",
+      "status": "Matched",
+      "dueDate": "2026-08-12"
+    },
+    {
+      "id": "ST-10022",
+      "vendor": "Contoso Ltd.",
+      "amount": "$14,980.00",
+      "status": "Unmatched",
+      "dueDate": "2026-08-13"
+    },
+    {
+      "id": "ST-10023",
+      "vendor": "Fabrikam Inc.",
+      "amount": "$9,120.00",
+      "status": "Exception",
+      "dueDate": "2026-08-11"
+    }
+  ],
+  "mockNotifications": [
+    {
+      "id": 1,
+      "message": "12 high-priority exceptions require review.",
+      "tone": "warning"
+    },
+    {
+      "id": 2,
+      "message": "Vendor ACME Corp responded to discrepancy query.",
+      "tone": "info"
+    },
+    {
+      "id": 3,
+      "message": "Monthly audit packet is ready for controller approval.",
+      "tone": "success"
+    }
+  ],
+  "topVendors": [
+    {
+      "vendor": "ABC Manufacturing Ltd",
+      "open": 45,
+      "overdue": 8,
+      "days": 22,
+      "avgTime": 12.4
+    },
+    {
+      "vendor": "Global Supplies Inc",
+      "open": 34,
+      "overdue": 6,
+      "days": 18,
+      "avgTime": 11.3
+    },
+    {
+      "vendor": "Tech Parts Co.",
+      "open": 23,
+      "overdue": 3,
+      "days": 11,
+      "avgTime": 10.1
+    },
+    {
+      "vendor": "Office Needs Pvt Ltd",
+      "open": 19,
+      "overdue": 4,
+      "days": 9,
+      "avgTime": 9.8
+    },
+    {
+      "vendor": "Industrial Goods LLC",
+      "open": 18,
+      "overdue": 2,
+      "days": 7,
+      "avgTime": 8.6
+    }
+  ],
+  "analystWorkload": [
+    {
+      "analyst": "John Smith",
+      "avatarColor": "bg-blue-500",
+      "progress": 28,
+      "open": 22,
+      "completed": 48
+    },
+    {
+      "analyst": "Emily Davis",
+      "avatarColor": "bg-emerald-500",
+      "progress": 24,
+      "open": 18,
+      "completed": 44
+    },
+    {
+      "analyst": "Michael Brown",
+      "avatarColor": "bg-purple-500",
+      "progress": 19,
+      "open": 15,
+      "completed": 35
+    },
+    {
+      "analyst": "Sarah Wilson",
+      "avatarColor": "bg-orange-500",
+      "progress": 16,
+      "open": 11,
+      "completed": 30
+    },
+    {
+      "analyst": "David Johnson",
+      "avatarColor": "bg-cyan-500",
+      "progress": 14,
+      "open": 9,
+      "completed": 26
+    }
+  ],
+  "mockAuditLogs": [
+    {
+      "id": 1,
+      "action": "Statement approved",
+      "user": "Finance Controller",
+      "time": "09:14 AM"
+    },
+    {
+      "id": 2,
+      "action": "Exception reassigned",
+      "user": "AP Team Lead",
+      "time": "10:02 AM"
+    },
+    {
+      "id": 3,
+      "action": "Vendor message sent",
+      "user": "AP Analyst",
+      "time": "10:31 AM"
+    }
+  ]
+}

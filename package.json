@@ -1,0 +1,36 @@
+{
+   "name": "statement-reconciliation-solution",
+   "version": "0.1.0",
+   "description": "Frontend project for a Statement Reconciliation Solution",
+   "private": true,
+   "scripts": {
+      "dev": "next dev",
+      "build": "next build",
+      "start": "next start",
+      "lint": "eslint"
+   },
+   "dependencies": {
+      "@reduxjs/toolkit": "^2.12.0",
+      "@tanstack/react-table": "^8.21.3",
+      "axios": "^1.19.0",
+      "file-saver": "^2.0.5",
+      "html2canvas": "^1.4.1",
+      "jspdf": "^4.2.1",
+      "lucide-react": "^1.31.0",
+      "next": "^16.2.6",
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4",
+      "react-redux": "^9.3.0",
+      "recharts": "^3.10.1",
+      "sonner": "^2.0.8",
+      "xlsx": "^0.18.5"
+   },
+   "devDependencies": {
+      "@tailwindcss/postcss": "^4",
+      "@types/node": "26.2.0",
+      "@types/react": "19.2.18",
+      "eslint": "^9",
+      "eslint-config-next": "16.2.6",
+      "tailwindcss": "^4"
+   }
+}
