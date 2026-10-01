@@ -14,7 +14,7 @@ console.log(
 process.env.NEXT_PUBLIC_API_BASE_URL
 );
 
-export const HOME_DASHBOARD_URL = `${API_BASE_URL}/home`;
+export const HOME_DASHBOARD_URL = `${API_BASE_URL}/dashboard`;
 export const CASES_URL = `${API_BASE_URL}/cases`;
 export const RECOVERIES_URL = `${API_BASE_URL}/recoveries`;
 export const AUDIT_URL = `${API_BASE_URL}/audit`;

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import Navbar from "./navbar";
 import UserProfile from "./UserProfile";
-import { X } from "lucide-react";
+import { ShieldAlert, X } from "lucide-react";
 
 
 export default function Sidebar({ isOpen, setIsOpen }) {
@@ -56,7 +56,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     CollectIQ
                   </h2>
                   <p className="text-xs text-white/70">
-                    Collections Intelligence
+                    Collections Dashboard
                   </p>
                 </div>
               </div>

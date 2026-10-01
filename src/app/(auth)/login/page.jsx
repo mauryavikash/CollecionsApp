@@ -8,12 +8,9 @@ import { loginUser } from "@/app/lib/api";
 export default function LoginPage() {
   const router = useRouter();
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-
-    if (isLoggedIn === "true") {
-        router.replace("/home");
-    }
-}, []);
+    localStorage.setItem("isLoggedIn", "true");
+    router.replace("/home");
+  }, [router]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

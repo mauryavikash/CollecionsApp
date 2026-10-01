@@ -120,13 +120,13 @@ useEffect(() => {
     );
   };
 }, []);
-  let title = "Home";
+  let title = "Collections Dashboard";
 
   if (pathname) {
     if (pathname === "/home") title = "Collections Dashboard";
     else if (pathname === "/cases") title = "Cases";
-    else if (pathname === "/recoveries") title = "Recoveries";
-    else if (pathname === "/vendor") title = "Vendor Deviations ";
+    else if (pathname === "/recoveries") title = "Promise to Pay";
+    else if (pathname === "/vendor") title = "Account 360";
     else if (pathname === "/audit") title = "Audit Log";
     // else if (pathname === "/reports") title = "Reports & Analytics";
     // else if (pathname === "/settings") title = "Configuration";
