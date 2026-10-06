@@ -28,6 +28,14 @@ function getStoredUser() {
     return null;
   }
 }
+
+function normalizeAgent(agent, index) {
+  return {
+    agent_id: agent?.agent_id ?? agent?.id ?? `agent-${index + 1}`,
+    agent_name: agent?.agent_name ?? agent?.name ?? "Unknown Agent",
+    status: (agent?.status ?? "").toString().toLowerCase(),
+  };
+}
  
 export default function Header({ setIsOpen, isOpen }) {
   const pathname = usePathname();
@@ -57,18 +65,28 @@ const notificationRef = useRef(null);
     try {
       const data = await getAgentStatus();
 
-      const agents = data?.agents || [];
-
-      const live = agents.filter((agent) =>
-        agent.agent_id?.startsWith("A")
+      const agents = (data?.agents || []).map((agent, index) =>
+        normalizeAgent(agent, index)
       );
 
+      const live = agents.filter((agent) => agent.status === "live");
       const standby = agents.filter((agent) =>
-        agent.agent_id?.startsWith("S")
+        ["standby", "idle", "paused"].includes(agent.status)
       );
 
-      setLiveAgents(live);
-      setStandbyAgents(standby);
+      // Fallback for legacy payloads where status is absent but IDs are prefixed.
+      const resolvedLive =
+        live.length > 0
+          ? live
+          : agents.filter((agent) => agent.agent_id?.startsWith("A"));
+
+      const resolvedStandby =
+        standby.length > 0
+          ? standby
+          : agents.filter((agent) => agent.agent_id?.startsWith("S"));
+
+      setLiveAgents(resolvedLive);
+      setStandbyAgents(resolvedStandby);
 
     } catch (error) {
       console.error("Agent API Error:", error);
