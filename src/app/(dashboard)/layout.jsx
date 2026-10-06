@@ -12,7 +12,13 @@ import Sidebar from '../../components/layout/sidebar';
 import { Toaster } from "sonner";
 export default function DashboardLayout({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [loading, setLoading] = useState(true);
+    const [loading] = useState(() => {
+        if (typeof window === "undefined") {
+            return true;
+        }
+
+        return sessionStorage.getItem("isLoggedIn") !== "true";
+    });
 
     const router = useRouter();
 
@@ -28,15 +34,10 @@ export default function DashboardLayout({ children }) {
     // }, [router]);
 
     useEffect(() => {
-    const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-
-    if (isLoggedIn !== "true") {
-        router.replace("/login");
-        return;
-    }
-
-    setLoading(false);
-    }, [router]);
+        if (loading) {
+            router.replace("/login");
+        }
+    }, [loading, router]);
 
     if (loading) {
         return null;

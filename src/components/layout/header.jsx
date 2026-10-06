@@ -9,6 +9,25 @@ getAgentStatus,
 getNotifications,
 } from "@/app/lib/api";
   import { useRouter } from "next/navigation";
+
+function getStoredUser() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedUser = sessionStorage.getItem("user");
+
+    if (!storedUser || storedUser === "undefined") {
+      return null;
+    }
+
+    return JSON.parse(storedUser);
+  } catch (error) {
+    console.error("Unable to parse user from sessionStorage", error);
+    return null;
+  }
+}
  
 export default function Header({ setIsOpen, isOpen }) {
   const pathname = usePathname();
@@ -23,7 +42,7 @@ const handleLogout = () => {
   router.replace("/login");
 };
 
-  const [user, setUser] = useState(null);
+  const [user] = useState(() => getStoredUser());
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [liveAgents, setLiveAgents] = useState([]);
@@ -32,14 +51,6 @@ const handleLogout = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
 
 const notificationRef = useRef(null);
-
-useEffect(() => {
-  const storedUser = sessionStorage.getItem("user");
-
-  if (storedUser && storedUser !== "undefined") {
-    setUser(JSON.parse(storedUser));
-  }
-}, []);
 
   useEffect(() => {
   const loadAgents = async () => {
