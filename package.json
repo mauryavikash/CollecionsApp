@@ -3,10 +3,14 @@
    "version": "0.1.0",
    "description": "Frontend project for a Statement Reconciliation Solution",
    "private": true,
+   "engines": {
+      "node": "20.x"
+   },
+   "packageManager": "npm@10.8.2",
    "scripts": {
       "dev": "next dev",
       "build": "next build",
-      "start": "next start",
+      "start": "node server.js",
       "lint": "eslint"
    },
    "dependencies": {

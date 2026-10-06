@@ -37,6 +37,12 @@ let dashboardRequest;
 let workbenchRequest;
 let promiseToPayRequest;
 let accountRequest;
+let agentStatusRequest;
+let notificationsRequest;
+let agentStatusCache;
+let notificationsCache;
+const LIVE_STATUS_CACHE_TTL_MS = 15000;
+const NOTIFICATION_CACHE_TTL_MS = 15000;
 
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -89,12 +95,60 @@ axiosInstance.interceptors.response.use(
   }
 );
 export async function getAgentStatus() {
-const response = await axiosInstance.get("agent-status");
-return response.data;
+  const now = Date.now();
+
+  if (
+    agentStatusCache &&
+    now - agentStatusCache.fetchedAt < LIVE_STATUS_CACHE_TTL_MS
+  ) {
+    return agentStatusCache.data;
+  }
+
+  if (!agentStatusRequest) {
+    agentStatusRequest = axiosInstance
+      .get("agent-status")
+      .then((response) => {
+        agentStatusCache = {
+          data: response.data,
+          fetchedAt: Date.now(),
+        };
+
+        return response.data;
+      })
+      .finally(() => {
+        agentStatusRequest = undefined;
+      });
+  }
+
+  return agentStatusRequest;
 }
 export async function getNotifications() {
-const response = await axiosInstance.get("notification");
-return response.data;
+  const now = Date.now();
+
+  if (
+    notificationsCache &&
+    now - notificationsCache.fetchedAt < NOTIFICATION_CACHE_TTL_MS
+  ) {
+    return notificationsCache.data;
+  }
+
+  if (!notificationsRequest) {
+    notificationsRequest = axiosInstance
+      .get("notification")
+      .then((response) => {
+        notificationsCache = {
+          data: response.data,
+          fetchedAt: Date.now(),
+        };
+
+        return response.data;
+      })
+      .finally(() => {
+        notificationsRequest = undefined;
+      });
+  }
+
+  return notificationsRequest;
 }
 
 export async function loginUser(email, password) {
