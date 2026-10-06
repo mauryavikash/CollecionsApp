@@ -21,30 +21,30 @@ export const ROLE_OPTIONS = [
 
 export const NAV_ITEMS = [
   {
-    name: "Home",
-    href: "/home",
+    name: "Collections Dashboard",
+    href: "/collectionsDashboard",
     icon: Home,
   },
   {
-    name: "Cases",
-    href: "/cases",
+    name: "Workbench",
+    href: "/workbench",
     icon: Gift,
   },
   {
-    name: "Recoveries",
-    href: "/recoveries",
+    name: "Promise to pay",
+    href: "/promiseToPay",
     icon: DollarSign,
   },
   {
-    name: "Vendor",
-    href: "/vendor",
+    name: "Account",
+    href: "/account",
     icon: Users,
   },
-  {
-    name: "Audit",
-    href: "/audit",
-    icon: Clock3,
-  },
+  // {
+  //   name: "Audit",
+  //   href: "/audit",
+  //   icon: Clock3,
+  // },
 
   // {
   //   name: "Reports & Analytics",

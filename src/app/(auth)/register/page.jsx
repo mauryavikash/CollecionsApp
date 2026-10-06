@@ -8,6 +8,7 @@ import { registerUser } from "@/app/lib/api";
 import { toast } from "sonner";
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,19 +35,19 @@ async function handleSubmit(event) {
 
     const data = await registerUser(
       email,
-      password,
-      confirmPassword
+      name
     );
 
     // alert(data.message || "Registration Successful");
     toast.success("Action completed successfully");
     router.push("/login");
     } catch (err) {
-       toast.error(error?.response?.data?.message || "Something went wrong");
-       setError(
-        err.response?.data?.detail ||
-        "Registration Failed"
-        );
+      const message =
+       err.response?.data?.error ||
+       err.response?.data?.detail ||
+       "Registration failed";
+      toast.error(message);
+      setError(message);
     } finally {
         setLoading(false);
     }
@@ -78,7 +79,14 @@ async function handleSubmit(event) {
               <span className="mb-2 block text-sm font-semibold text-black">Full Name</span>
               <div className="relative">
                 <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input type="text" placeholder="Full Name" className="h-11 w-full rounded-xl bg-neutral-100 px-4 pl-10 text-sm text-neutral-700 outline-none" />
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                  className="h-11 w-full rounded-xl bg-neutral-100 px-4 pl-10 text-sm text-neutral-700 outline-none"
+                />
               </div>
             </label>
 
@@ -91,6 +99,7 @@ async function handleSubmit(event) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
                 className="h-11 w-full rounded-xl bg-neutral-100 px-4 pl-10"
                 />
               </div>
@@ -129,7 +138,7 @@ async function handleSubmit(event) {
                 </button>
                 </div>
                 </label>
-                
+
                 {/* Confirm Password */}
                 <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-black">
@@ -195,7 +204,7 @@ async function handleSubmit(event) {
             <span className="h-px flex-1 bg-neutral-300" />
           </div>
 
-          <button type="button" onClick={() => router.push("/home")} className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700">
+          <button type="button" onClick={() => router.push("/collectionsDashboard")} className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-700">
             <BarChart3 size={16} />
             Continue with Corporate SSO
           </button>
