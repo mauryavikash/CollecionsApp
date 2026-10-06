@@ -88,10 +88,10 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-export async function getAgentStatus() {
-const response = await axiosInstance.get("agent-status");
-return response.data;
-}
+// export async function getAgentStatus() {
+// const response = await axiosInstance.get("agent-status");
+// return response.data;
+// }
 export async function getNotifications() {
 const response = await axiosInstance.get("notification");
 return response.data;
@@ -147,7 +147,7 @@ export async function getWorkbench() {
 export async function getPromiseToPay() {
   if (!promiseToPayRequest) {
     promiseToPayRequest = axiosInstance
-      .get("ui/promise-to-pay")
+      .get("ui/promise-to-pay?status=all&limit=100")
       .then((response) => response.data)
       .catch((error) => {
         promiseToPayRequest = undefined;
@@ -172,15 +172,15 @@ export async function getAccount() {
   return accountRequest;
 }
 
-export async function sendCopilotMessage(message, userId, userName) {
-  const response = await axiosInstance.post("v1/copilot/chat", {
-    userId,
-    userName,
-    message,
-    timestamp: new Date().toISOString(),
-  });
+// export async function sendCopilotMessage(message, userId, userName) {
+//   const response = await axiosInstance.post("v1/copilot/chat", {
+//     userId,
+//     userName,
+//     message,
+//     timestamp: new Date().toISOString(),
+//   });
 
-  return response.data;
-}
+//   return response.data;
+// }
 
 export default axiosInstance;
