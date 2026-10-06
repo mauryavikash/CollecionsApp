@@ -28,7 +28,7 @@ import { Bell, Menu,Zap,Bot, ChevronDown,CheckCircle2,FileText,Mail, Settings, U
 import React, { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
-getAgentStatus,
+// getAgentStatus,
 getNotifications,
 } from "@/app/lib/api";
   import { useRouter } from "next/navigation";
