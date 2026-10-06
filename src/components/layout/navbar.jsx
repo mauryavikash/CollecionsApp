@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
-  LayoutDashboard,
+  Home,
   Gift,
   DollarSign,
   Users,
@@ -15,10 +15,10 @@ import {
 import Link from "next/link";
 
 const navItems = [
-  { name: "Collections Dashboard", href: "/home", icon: LayoutDashboard },
-  { name: "Collector WorkBench ", href: "/cases", icon: Gift },
-  { name: "Promise to pay", href: "/recoveries", icon: DollarSign },
-  { name: "Account 360", href: "/vendor", icon: Users },
+  { name: "Collections Dashboard", href: "/collectionsDashboard", icon: Home },
+  { name: "Collector Workbench", href: "/workbench", icon: Gift },
+  { name: "Promise to pay", href: "/promiseToPay", icon: DollarSign },
+  { name: "Account 360", href: "/account", icon: Users },
   // { name: "Audit Trail", href: "/audit", icon: Clock3 },
   // { name: "Reports & Analytics", href: "/reports", icon: BarChart3 },
   // { name: "Audit & Compliance", href: "/audit", icon: ShieldCheck },

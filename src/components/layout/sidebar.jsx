@@ -2,12 +2,11 @@
 
 import React from "react";
 import {
-  TrendingUp,
+  ShieldAlert,TrendingUp
 } from "lucide-react";
 import Navbar from "./navbar";
 import UserProfile from "./UserProfile";
-import { ShieldAlert, X } from "lucide-react";
-
+import { X } from "lucide-react";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   return (
@@ -40,12 +39,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           >
          
 
-            <div className="flex flex-col items-center w-full">
-              <div className="text-base  font-semibold text-dgem-white">
-              </div>
-              {/* <div className="pt-2 text-center text-white/70">
-                <p><ShieldAlert style={{ display: "inline-block" }} /> Duplicate & Anomaly </p>
-              </div> */}
               <div className="flex items-center gap-3 w-full">
                 <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
                   <TrendingUp size={20} className="text-white" />
@@ -60,7 +53,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   </p>
                 </div>
               </div>
-            </div>
           </div>
 
           <button

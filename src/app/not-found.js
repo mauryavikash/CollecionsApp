@@ -7,7 +7,7 @@ export default function NotFound() {
         <h1 className="text-3xl font-semibold text-slate-900">404</h1>
         <p className="mt-3 text-slate-600">The page you’re looking for doesn’t exist.</p>
         <Link
-          href="/home"
+          href="/collectionsDashboard"
           className="mt-6 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
         >
           Go to Home
