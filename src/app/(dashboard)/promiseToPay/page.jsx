@@ -7,60 +7,101 @@ import PromiseToPayTable from "@/components/promiseToPay/PromiseToPayTable";
 import { LoadingState } from "@/components/common/LoadingState";
 import { getPromiseToPay } from "@/app/lib/api";
 
-// Fallback static data for local testing
-const promiseToPayData = {
-  filters: [
-    { label: "All", count: 3 },
-    { label: "Active", count: 3 },
-    { label: "Due Soon", count: 2 },
-    { label: "Broken", count: 2 },
-    { label: "Fulfilled", count: 1 },
-  ],
-  records: [
-    {
-      customer: "Dynamic Solutions Corp",
-      invoice: "INV-2024-7823",
-      amount: "$160K",
-      created: "2026-09-10",
-      promiseDate: "2026-10-22",
-      dueDate: "2026-10-22",
-      status: "Active",
-      owner: "Mark Davis",
-      initials: "MD",
-      avatar: "bg-[#214cad]",
-      note: "ERP system causing delay. Management committed.",
-      followUp: "2026-10-15",
-    },
-    {
-      customer: "Vertex Technologies",
-      invoice: "INV-2024-6541",
-      amount: "$234K",
-      created: "2026-09-05",
-      promiseDate: "2026-10-05",
-      dueDate: "2026-10-05",
-      status: "Active",
-      owner: "James Wilson",
-      initials: "JW",
-      avatar: "bg-[#214cad]",
-      note: "Full balance. Venture funding received.",
-      followUp: "2026-09-28",
-    },
-    {
-      customer: "Acme Manufacturing Ltd",
-      invoice: "INV-2024-5234",
-      amount: "$180K",
-      created: "2026-09-01",
-      promiseDate: "2026-10-15",
-      dueDate: "2026-10-15",
-      status: "Active",
-      owner: "Sarah Chen",
-      initials: "SC",
-      avatar: "bg-[#214cad]",
-      note: "Partial payment. Rest by Nov 1.",
-      followUp: "2026-10-08",
-    },
-  ],
-};
+const DEFAULT_AVATAR_CLASS = "bg-[#214cad]";
+
+function getInitials(value = "") {
+  const words = String(value)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) {
+    return "NA";
+  }
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function withFallback(value, fallback = "-") {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+
+  return value;
+}
+
+function normalizeStatusValue(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizeRecord(record = {}) {
+  const owner = record?.owner ?? record?.collectionOwner ?? "";
+  const customer = record?.customer ?? "";
+
+  return {
+    customer: withFallback(customer),
+    invoice: withFallback(record?.invoice),
+    amount: withFallback(record?.amount ?? record?.ptpAmount),
+    created: withFallback(record?.created ?? record?.creationDate),
+    promiseDate: withFallback(record?.promiseDate),
+    dueDate: withFallback(record?.dueDate),
+    status: withFallback(record?.status, "Active"),
+    owner: withFallback(owner),
+    initials: withFallback(
+      record?.initials,
+      getInitials(owner || customer)
+    ),
+    avatar: withFallback(record?.avatar, DEFAULT_AVATAR_CLASS),
+    note: withFallback(record?.note),
+    followUp: withFallback(record?.followUp),
+  };
+}
+
+function normalizePromiseToPayData(payload = {}) {
+  const recordsSource =
+    payload?.records ??
+    payload?.promiseToPayRecords ??
+    [];
+  const records = recordsSource.map(normalizeRecord);
+
+  const countsSource = payload?.filters ?? payload?.counts ?? [];
+  const normalizedCounts = countsSource.map((item) => ({
+    label: item?.label,
+    count: Number(item?.count) || 0,
+  }));
+
+  if (normalizedCounts.length) {
+    return { records, filters: normalizedCounts };
+  }
+
+  const statusCounts = records.reduce((acc, record) => {
+    const status = record?.status;
+
+    if (!status || status === "-") {
+      return acc;
+    }
+
+    acc[status] = (acc[status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    records,
+    filters: [
+      { label: "All", count: records.length },
+      ...Object.entries(statusCounts).map(
+        ([label, count]) => ({ label, count })
+      ),
+    ],
+  };
+}
 
 function Select({ value, onChange, options, label }) {
   return (
@@ -91,8 +132,8 @@ export default function PromiseToPayPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Active");
-  const [activeFilter, setActiveFilter] = useState("Active");
+  const [status, setStatus] = useState("All");
+  const [activeFilter, setActiveFilter] = useState("All");
 
   useEffect(() => {
     let isMounted = true;
@@ -133,20 +174,53 @@ export default function PromiseToPayPage() {
     };
   }, []);
 
-  const resolvedPromiseData =
-    promiseApiData?.promiseToPay ??
-    promiseApiData ??
-    promiseToPayData;
+  const resolvedPromiseData = useMemo(() => {
+    const payload =
+      promiseApiData?.promiseToPay ??
+      promiseApiData ??
+      {};
+
+    return normalizePromiseToPayData(payload);
+  }, [promiseApiData]);
+
+  const statusOptions = useMemo(() => {
+    const fromFilters = (resolvedPromiseData?.filters ?? [])
+      .map((filter) => filter?.label)
+      .filter(
+        (label) =>
+          label &&
+          label !== "All"
+      );
+
+    if (fromFilters.length) {
+      return fromFilters;
+    }
+
+    return [
+      "Active",
+      "Due Soon",
+      "Broken",
+      "Fulfilled",
+    ];
+  }, [resolvedPromiseData]);
 
   const records = useMemo(() => {
+    const normalizedStatus = normalizeStatusValue(status);
+    const normalizedActiveFilter = normalizeStatusValue(activeFilter);
+
     return (resolvedPromiseData?.records ?? []).filter(
-      (record) =>
+      (record) => {
+        const recordStatus = normalizeStatusValue(record?.status);
+
+        return (
         (record?.customer ?? "")
           .toLowerCase?.()
           .includes(query.toLowerCase()) &&
-        (status === "All" || record?.status === status) &&
+        (status === "All" || recordStatus === normalizedStatus) &&
         (activeFilter === "All" ||
-          record?.status === activeFilter)
+          recordStatus === normalizedActiveFilter)
+        );
+      }
     );
   }, [query, status, activeFilter, resolvedPromiseData]);
 
@@ -179,12 +253,7 @@ export default function PromiseToPayPage() {
             label="Status"
             value={status}
             onChange={setStatus}
-            options={[
-              "Active",
-              "Due Soon",
-              "Broken",
-              "Fulfilled",
-            ]}
+            options={statusOptions}
           />
 
           <Select

@@ -161,7 +161,7 @@ export async function getPromiseToPay() {
 export async function getAccount() {
   if (!accountRequest) {
     accountRequest = axiosInstance
-      .get("ui/account360")
+      .get("ui/account360/32334")
       .then((response) => response.data)
       .catch((error) => {
         accountRequest = undefined;
