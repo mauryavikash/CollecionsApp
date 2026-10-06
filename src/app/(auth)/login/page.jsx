@@ -42,13 +42,22 @@ async function handleSubmit(event) {
 
     sessionStorage.setItem("isLoggedIn", "true");
 
+      // sessionStorage.setItem(
+      //   "user",
+      //   JSON.stringify({
+      //     user_id: data.user_id,
+      //     first_name: data.first_name,
+      //     role: data.role,
+      //     email: data.email,
+      //   })
+      // );
       sessionStorage.setItem(
         "user",
         JSON.stringify({
-          user_id: data.user_id,
-          first_name: data.first_name,
-          role: data.role,
-          email: data.email,
+          user_id: data.user.user_id,
+          name: data.user.name,
+          role: data.user.role,
+          email: data.user.email,
         })
       );
 

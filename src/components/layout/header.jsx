@@ -1,26 +1,3 @@
-// "use client";
-
-// import { Menu } from "lucide-react";
-
-// export default function Header({ isOpen, setIsOpen }) {
-//   return (
-//     <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white px-4 shadow-sm">
-//       <button
-//         type="button"
-//         onClick={() => setIsOpen(!isOpen)}
-//         className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-//         aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
-//         title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
-//       >
-//         <Menu size={20} />
-//       </button>
-//       <div className="ml-3 min-w-0">
-//         <p className="truncate text-sm font-semibold text-slate-900">Collections Dashboard</p>
-//       </div>
-//     </header>
-//   );
-// }
-
 
 "use client";
 
@@ -28,7 +5,7 @@ import { Bell, Menu,Zap,Bot, ChevronDown,CheckCircle2,FileText,Mail, Settings, U
 import React, { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
-// getAgentStatus,
+getAgentStatus,
 getNotifications,
 } from "@/app/lib/api";
   import { useRouter } from "next/navigation";
@@ -205,7 +182,109 @@ useEffect(() => {
         {/* Right section */}
         <div className="flex items-center gap-2 flex-wrap justify-end">
           
-          
+          <div className="relative" ref={agentsRef}>
+            <button
+              type="button"
+              onClick={() => { setAgentsOpen((v) => !v); setStandbyOpen(false); }}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 shadow-sm transition-all hover:bg-emerald-100 hover:shadow-md cursor-pointer"
+            >
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              </span>
+              Agents Live
+              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-bold text-white">
+                {liveAgents.length}
+              </span>
+            </button>
+
+            {/* Live agents dropdown */}
+            <div className={`absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-xl transition-all duration-200 z-50 ${
+              agentsOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0 pointer-events-none"
+            }`}>
+              <div className="border-b border-slate-100 bg-emerald-50 px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <Zap size={13} className="text-emerald-600" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-emerald-700">Live Agents ({liveAgents.length})</span>
+                </div>
+              </div>
+              {liveAgents.map((agent, index) => (
+                <div
+                  key={agent.agent_id}
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">
+                    {/* {index + 1} */} <User size={13} />
+                    </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-semibold text-slate-800">
+                      {agent.agent_name}
+                    </p>
+
+                    <p className="text-[11px] text-slate-500">
+                      Agent ID: {agent.agent_id}
+                    </p>
+                  </div>
+
+                  <span className="relative flex h-2 w-2 mt-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Standby pill + dropdown */}
+          <div className="relative" ref={standbyRef}>
+            <button
+              type="button"
+              onClick={() => { setStandbyOpen((v) => !v); setAgentsOpen(false); }}
+              className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-700 shadow-sm transition-all hover:bg-amber-100 hover:shadow-md cursor-pointer"
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+              Standby
+              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white">
+                {standbyAgents.length}
+              </span>
+            </button>
+
+            {/* Standby agents dropdown */}
+            <div className={`absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-xl transition-all duration-200 z-50 ${
+              standbyOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0 pointer-events-none"
+            }`}>
+              <div className="border-b border-slate-100 bg-amber-50 px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <Bot size={13} className="text-amber-600" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-amber-700">Standby Agents ({standbyAgents.length})</span>
+                </div>
+              </div>
+              {standbyAgents.map((agent, index) => (
+                <div
+                  key={agent.agent_id}
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">
+                    {/* {index + 1} */} <User size={13} />
+                    </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-semibold text-slate-800">
+                      {agent.agent_name}
+                    </p>
+
+                    <p className="text-[11px] text-slate-500">
+                      Agent ID: {agent.agent_id}
+                    </p>
+                  </div>
+
+                  <span className="h-2 w-2 mt-1.5 rounded-full bg-amber-500" />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* <button
             className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:text-dgem-blue hover:shadow-md"
             type="button"
@@ -305,7 +384,8 @@ useEffect(() => {
               />
               <span className="hidden flex-col items-start leading-tight sm:flex">
                 <span className="text-[12px] font-semibold text-slate-900">
-                  {user?.first_name || "User"}
+                  {/* {user?.first_name || "User"} */}
+                  {user?.name || "User"}
                 </span>
                 <span className="text-[10px] text-slate-500">{user?.role || ""}</span>
               </span>

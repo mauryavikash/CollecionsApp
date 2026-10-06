@@ -88,10 +88,10 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-// export async function getAgentStatus() {
-// const response = await axiosInstance.get("agent-status");
-// return response.data;
-// }
+export async function getAgentStatus() {
+const response = await axiosInstance.get("agent-status");
+return response.data;
+}
 export async function getNotifications() {
 const response = await axiosInstance.get("notification");
 return response.data;
