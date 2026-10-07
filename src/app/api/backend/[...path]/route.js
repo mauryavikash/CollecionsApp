@@ -20,7 +20,7 @@ function getRequiredEnvironment(name) {
   return value;
 }
 
-async function getAccessToken() {
+async function getServicePrincipalToken() {
   const host = getRequiredEnvironment("DATABRICKS_HOST")
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
@@ -37,9 +37,7 @@ async function getAccessToken() {
   });
 
   if (!response.ok) {
-    const error = new Error(`Databricks OAuth request failed with status ${response.status}`);
-    error.status = 401;
-    throw error;
+    throw new Error(`Databricks OAuth request failed with status ${response.status}`);
   }
 
   const { access_token: accessToken } = await response.json();
@@ -78,10 +76,14 @@ async function proxyRequest(request, paramsPromise) {
     const targetUrl = new URL(`${getAppApiBaseUrl()}/${path.map(encodeURIComponent).join("/")}`);
     targetUrl.search = requestUrl.search;
 
-    const headers = new Headers({
-      authorization: `Bearer ${await getAccessToken()}`,
-    });
+    const headers = new Headers();
+    const authorization = request.headers.get("authorization");
     const contentType = request.headers.get("content-type");
+
+    headers.set(
+      "authorization",
+      authorization ?? `Bearer ${await getServicePrincipalToken()}`
+    );
 
     if (contentType) {
       headers.set("content-type", contentType);
@@ -109,15 +111,9 @@ async function proxyRequest(request, paramsPromise) {
     });
   } catch (error) {
     console.error("Databricks App API proxy failed", error);
-    const isOAuthFailure = error?.status === 401;
-
     return Response.json(
-      {
-        error: isOAuthFailure
-          ? "Databricks authentication failed. Configure DATABRICKS_CLIENT_SECRET with the secret value, not the secret ID."
-          : "Unable to reach the Databricks App API",
-      },
-      { status: isOAuthFailure ? 401 : 502 }
+      { error: "Unable to reach the Databricks App API" },
+      { status: 502 }
     );
   }
 }
