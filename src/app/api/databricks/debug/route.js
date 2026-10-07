@@ -52,7 +52,7 @@ export async function GET() {
         headers: { Authorization: `Bearer ${accessToken}` },
         cache: "no-store",
       }),
-      fetch(`${apiBaseUrl}/ui/dashboard`, {
+      fetch(`${apiBaseUrl}/home`, {
         headers: { Authorization: `Bearer ${accessToken}` },
         cache: "no-store",
       }),

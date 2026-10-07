@@ -1,5 +1,5 @@
 import { permanentRedirect } from "next/navigation";
 
-export default function CollectionsDashboard() {
+export default function Home() {
   permanentRedirect("/login");
 }

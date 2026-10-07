@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  productionBrowserSourceMaps: false,
-  enablePrerenderSourceMaps: false,
-
   // 1. Authorize outside host domains for images
   images: {
     remotePatterns: [
