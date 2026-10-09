@@ -13,17 +13,33 @@ export default function Account360Detail({ account }) {
               <h1 className="text-[20px] font-bold text-slate-800">
                 {account.name}
               </h1>
-              <span className="rounded bg-rose-100 px-2 py-1 text-[9px] font-semibold text-[#d22c2c]">
-                {account.risk}
-              </span>
-              {/* <span className="rounded bg-rose-100 px-2 py-1 text-[9px] font-semibold text-[#d22c2c]">
-                {account.ptp}
-              </span> */}
               <span
                 className={`rounded px-2 py-1 text-[9px] font-semibold ${
-                  account.ptp === "PTP: Partial"
+                  account.risk?.toLowerCase().includes("critical")
+                    ? "bg-red-100 text-red-700"
+                    : account.risk?.toLowerCase().includes("high")
+                    ? "bg-orange-100 text-orange-700"
+                    : account.risk?.toLowerCase().includes("medium")
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-green-100 text-green-700"
+                }`}
+              >
+                {account.risk}
+              </span>
+              
+              <span
+                className={`rounded px-2 py-1 text-[9px] font-semibold ${
+                  account.ptp?.toLowerCase().includes("partial")
                     ? "bg-orange-100 text-orange-600"
-                    : "bg-rose-100 text-[#d22c2c]"
+                    : account.ptp?.toLowerCase().includes("active")
+                    ? "bg-blue-100 text-blue-600"
+                    : account.ptp?.toLowerCase().includes("broken")
+                    ? "bg-red-100 text-red-600"
+                    : account.ptp?.toLowerCase().includes("fulfilled")
+                    ? "bg-green-100 text-green-600"
+                    : account.ptp?.toLowerCase().includes("due soon")
+                    ? "bg-yellow-100 text-yellow-600"
+                    : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {account.ptp}
