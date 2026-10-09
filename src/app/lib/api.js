@@ -25,8 +25,8 @@ const axiosInstance = axios.create({
 
 export const DASHBOARD_URL = `${API_BASE_URL}/ui/dashboard`;
 export const WORKBENCH_URL = `${API_BASE_URL}/ui/workbench`;
-export const PROMISE_TO_PAY_URL = `${API_BASE_URL}/ui/promise-to-pay`;
-export const ACCOUNT_URL = `${API_BASE_URL}/ui/account360`;
+export const PROMISE_TO_PAY_URL = `${API_BASE_URL}/ui/promise-to-pay?status=all&limit=500`;
+export const ACCOUNT_URL = `${API_BASE_URL}/ui/account360/32342`;
 export const COPILOT_CHAT_URL = `${API_BASE_URL}/v1/copilot/chat`;
 export const LOGIN_URL = `${API_BASE_URL}/auth/login`;
 export const REGISTER_URL = `${API_BASE_URL}/auth/register`;
@@ -201,7 +201,7 @@ export async function getWorkbench() {
 export async function getPromiseToPay() {
   if (!promiseToPayRequest) {
     promiseToPayRequest = axiosInstance
-      .get("ui/promise-to-pay?status=all&limit=100")
+      .get("ui/promise-to-pay?status=all&limit=500")
       .then((response) => response.data)
       .catch((error) => {
         promiseToPayRequest = undefined;
@@ -215,7 +215,7 @@ export async function getPromiseToPay() {
 export async function getAccount() {
   if (!accountRequest) {
     accountRequest = axiosInstance
-      .get("ui/account360/32334")
+      .get("ui/account360/32342")
       .then((response) => response.data)
       .catch((error) => {
         accountRequest = undefined;
