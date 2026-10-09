@@ -41,8 +41,27 @@ export default function PromiseToPayTable({ records = [] }) {
                 <td className="px-3 py-3">{record.promiseDate}</td>
                 <td className="px-3 py-3">{record.created}</td>
                 <td className="px-3 py-3">{record.dueDate}</td>
-                <td className="px-3 py-3">
+                {/* <td className="px-3 py-3">
                   <span className="rounded bg-blue-100 px-2 py-1 font-semibold text-blue-600">
+                    ● {record.status}
+                  </span>
+                </td> */}
+                <td className="px-3 py-3">
+                  <span
+                    className={`rounded px-2 py-1 font-semibold ${
+                      record.status?.toLowerCase() === "partial"
+                        ? "bg-orange-100 text-orange-600"
+                        : record.status?.toLowerCase() === "active"
+                        ? "bg-blue-100 text-blue-600"
+                        : record.status?.toLowerCase() === "broken"
+                        ? "bg-red-100 text-red-600"
+                        : record.status?.toLowerCase() === "fulfilled"
+                        ? "bg-green-100 text-green-600"
+                        : record.status?.toLowerCase() === "due soon"
+                        ? "bg-yellow-100 text-yellow-600"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
                     ● {record.status}
                   </span>
                 </td>

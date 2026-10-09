@@ -1,6 +1,6 @@
-# Statement Reconciliation Frontend
+# Collections Frontend
 
-A modern, responsive frontend application for an AI-assisted **Statement Reconciliation Solution** built with **Next.js**, **React**, **JavaScript**, **Tailwind CSS**, **Redux**, **Lucide Icons**, **Recharts**, and **TanStack Table**.
+A modern, responsive frontend application for an AI-assisted **Collections** built with **Next.js**, **React**, **JavaScript**, **Tailwind CSS**, **Redux**, **Lucide Icons**, **Recharts**, and **TanStack Table**.
 
 This application provides an intuitive, role-based user experience for managing reconciliation workflows, exception handling, vendor communication, approvals, reporting, and audit compliance.
 
@@ -31,7 +31,7 @@ This application provides an intuitive, role-based user experience for managing 
 
 # Overview
 
-The **Statement Reconciliation Frontend** is the user interface layer for a reconciliation platform that helps finance and operations teams:
+The **Collections Frontend** is the user interface layer for a reconciliation platform that helps finance and operations teams:
 
 - reconcile supplier statements with ERP data
 - identify mismatches and exceptions

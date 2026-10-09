@@ -224,42 +224,74 @@ export default function PromiseToPayPage() {
   //   );
   // }, [query, status, activeFilter, resolvedPromiseData]);
 
-  const records = useMemo(() => {
+//   const records = useMemo(() => {
+//   return (resolvedPromiseData?.records ?? []).filter((record) => {
+//     const customer = String(record?.customer ?? "")
+//       .toLowerCase()
+//       .includes(query.toLowerCase());
+
+//     const recordStatus = normalizeStatusValue(record?.status);
+
+//     let tabMatch = true;
+
+//     if (activeFilter === "Active") {
+//       tabMatch = recordStatus === "open promise";
+//     } else if (activeFilter === "Fulfilled") {
+//       tabMatch = recordStatus === "fulfilled";
+//     } else if (activeFilter === "Broken") {
+//       tabMatch = recordStatus === "broken";
+//     } else if (activeFilter === "Due Soon") {
+//       tabMatch = recordStatus === "due soon";
+//     }
+
+//     let dropdownMatch = true;
+
+//     if (status !== "All") {
+//       dropdownMatch =
+//         recordStatus === normalizeStatusValue(status);
+//     }
+
+//     return customer && tabMatch && dropdownMatch;
+//   });
+// }, [
+//   query,
+//   status,
+//   activeFilter,
+//   resolvedPromiseData,
+// ]);
+  
+const records = useMemo(() => {
+  const normalizedActiveFilter =
+    normalizeStatusValue(activeFilter);
+
+  const normalizedStatus =
+    normalizeStatusValue(status);
+
   return (resolvedPromiseData?.records ?? []).filter((record) => {
-    const customer = String(record?.customer ?? "")
+    const customerMatch = String(record?.customer ?? "")
       .toLowerCase()
       .includes(query.toLowerCase());
 
     const recordStatus = normalizeStatusValue(record?.status);
 
-    let tabMatch = true;
+    const tabMatch =
+      activeFilter === "All"
+        ? true
+        : recordStatus === normalizedActiveFilter;
 
-    if (activeFilter === "Active") {
-      tabMatch = recordStatus === "open promise";
-    } else if (activeFilter === "Fulfilled") {
-      tabMatch = recordStatus === "fulfilled";
-    } else if (activeFilter === "Broken") {
-      tabMatch = recordStatus === "broken";
-    } else if (activeFilter === "Due Soon") {
-      tabMatch = recordStatus === "due soon";
-    }
+    const dropdownMatch =
+      status === "All"
+        ? true
+        : recordStatus === normalizedStatus;
 
-    let dropdownMatch = true;
-
-    if (status !== "All") {
-      dropdownMatch =
-        recordStatus === normalizeStatusValue(status);
-    }
-
-    return customer && tabMatch && dropdownMatch;
+    return customerMatch && tabMatch && dropdownMatch;
   });
-}, [
-  query,
-  status,
-  activeFilter,
-  resolvedPromiseData,
-]);
-  
+  }, [
+    query,
+    status,
+    activeFilter,
+    resolvedPromiseData,
+  ]);
   if (loading) {
     return <LoadingState label="Loading promise to pay data..." />;
   }

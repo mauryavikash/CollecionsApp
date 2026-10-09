@@ -11,9 +11,11 @@ import {
 } from "lucide-react";
 
 const riskStyles = {
-  High: "bg-rose-100 text-rose-500",
+  // High: "bg-rose-100 text-rose-500",
+  High: "bg-orange-100 text-orange-600",
   Medium: "bg-amber-100 text-amber-600",
   Low: "bg-emerald-50 text-emerald-600",
+  Critical: "bg-rose-100 text-rose-500",
 };
 const ptpStyles = {
   Broken: "bg-rose-100 text-rose-500",

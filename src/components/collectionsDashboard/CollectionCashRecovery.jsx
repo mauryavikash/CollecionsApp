@@ -22,11 +22,15 @@ export default function CollectionCashRecovery({
   forecast = [],
   riskAccounts = [],
 }) {
+
   const chartData = forecast.map((item) => ({
     ...item,
-    actual: item.actual > 0 ? item.actual : null,
+    actual:
+      Number(item.actual) > 0
+        ? Number(item.actual)
+        : null,
+    projected: Number(item.projected) || 0,
   }));
-
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]">
       {/* CASH RECOVERY FORECAST */}
@@ -82,7 +86,7 @@ export default function CollectionCashRecovery({
                 }}
               />
 
-              <YAxis
+              {/* <YAxis
                 domain={[0, "dataMax + 5000"]}
                 tickFormatter={(value) =>
                   `${Math.round(value / 1000)}K`
@@ -94,6 +98,23 @@ export default function CollectionCashRecovery({
                   fill: "#64748b",
                 }}
                 width={40}
+              /> */}
+
+              <YAxis
+                domain={[
+                  0,
+                  (dataMax) => Math.ceil(dataMax * 1.2),
+                ]}
+                tickFormatter={(value) =>
+                  `${value} ${forecast?.[0]?.unit || ""}`
+                }
+                tickLine={false}
+                axisLine={false}
+                tick={{
+                  fontSize: 8,
+                  fill: "#64748b",
+                }}
+                width={50}
               />
 
               <Bar
