@@ -16,7 +16,16 @@ export default function Account360Detail({ account }) {
               <span className="rounded bg-rose-100 px-2 py-1 text-[9px] font-semibold text-[#d22c2c]">
                 {account.risk}
               </span>
-              <span className="rounded bg-rose-100 px-2 py-1 text-[9px] font-semibold text-[#d22c2c]">
+              {/* <span className="rounded bg-rose-100 px-2 py-1 text-[9px] font-semibold text-[#d22c2c]">
+                {account.ptp}
+              </span> */}
+              <span
+                className={`rounded px-2 py-1 text-[9px] font-semibold ${
+                  account.ptp === "PTP: Partial"
+                    ? "bg-orange-100 text-orange-600"
+                    : "bg-rose-100 text-[#d22c2c]"
+                }`}
+              >
                 {account.ptp}
               </span>
             </div>

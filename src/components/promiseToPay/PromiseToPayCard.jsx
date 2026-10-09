@@ -34,7 +34,24 @@ export default function PromiseToPayCard({
                 </h2>
                 <p className="text-[9px] text-slate-400">{record.invoice}</p>
               </div>
-              <span className="rounded bg-blue-100 px-2 py-1 text-[8px] font-semibold text-blue-600">
+              {/* <span className="rounded bg-blue-100 px-2 py-1 text-[8px] font-semibold text-blue-600">
+                ● {record.status}
+              </span> */}
+              <span
+                className={`inline-flex h-6 w-[70px] items-center justify-center rounded px-2 py-1 text-[8px] font-semibold ${
+                  record.status?.toLowerCase() === "partial"
+                    ? "bg-orange-100 text-orange-600"
+                    : record.status?.toLowerCase() === "active"
+                    ? "bg-blue-100 text-blue-600"
+                    : record.status?.toLowerCase() === "broken"
+                    ? "bg-red-100 text-red-600"
+                    : record.status?.toLowerCase() === "fulfilled"
+                    ? "bg-green-100 text-green-600"
+                    : record.status?.toLowerCase() === "due soon"
+                    ? "bg-yellow-100 text-yellow-600"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
                 ● {record.status}
               </span>
             </div>
