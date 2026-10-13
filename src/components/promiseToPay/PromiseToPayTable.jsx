@@ -1,4 +1,7 @@
+import { useRouter } from "next/navigation";
+
 export default function PromiseToPayTable({ records = [] }) {
+  const router = useRouter();
   return (
     <section className="mt-[18px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_2px_5px_rgba(38,82,144,.1)]">
       <h2 className="border-b border-slate-200 px-4 py-3 text-[13px] font-bold text-slate-800">
@@ -31,8 +34,27 @@ export default function PromiseToPayTable({ records = [] }) {
                 key={`${record.invoice}-${record.customer}-${index}`}
                 className="border-t border-slate-200 hover:bg-slate-50"
               >
-                <td className="px-3 py-3 font-bold text-[#2671e3]">
+                {/* <td
+                  className="px-3 py-3 font-bold text-[#2671e3] cursor-pointer hover:underline"
+                  onClick={() => router.push("/account")}
+                >
                   {record.customer}
+                </td> */}
+
+                <td className="px-3 py-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/account?customerId=${record.invoice}&customerName=${encodeURIComponent(
+                          record.customer
+                        )}`
+                      )
+                    }
+                    className="font-bold text-[#2671e3] hover:underline"
+                  >
+                    {record.customer}
+                  </button>
                 </td>
                 <td className="px-3 py-3 text-slate-600">{record.invoice}</td>
                 <td className="px-3 py-3 font-bold text-slate-800">

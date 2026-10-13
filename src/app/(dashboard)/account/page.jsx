@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
 import Account360Detail from "@/components/account/Account360Detail";
@@ -12,50 +13,86 @@ import { LoadingState } from "@/components/common/LoadingState";
 import { getAccount } from "@/app/lib/api";
 
 export default function Account360Page() {
+  const searchParams = useSearchParams();
+  const customerId = searchParams.get("id") || "32342";
   const [accountApiData, setAccountApiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("Overview");
 
+  // useEffect(() => {
+  //   let isMounted = true;
+
+  //   async function loadAccountData() {
+  //     try {
+  //       setLoading(true);
+  //       setError(null);
+
+  //       const response = await getAccount();
+  //       const payload = response?.data ?? response;
+
+  //       if (
+  //         isMounted &&
+  //         payload &&
+  //         typeof payload === "object"
+  //       ) {
+  //         setAccountApiData(payload);
+  //       }
+  //     } catch (err) {
+  //       console.error("Account 360 API Error:", err);
+
+  //       if (isMounted) {
+  //         setError(err);
+  //         setAccountApiData(null);
+  //       }
+  //     } finally {
+  //       if (isMounted) {
+  //         setLoading(false);
+  //       }
+  //     }
+  //   }
+
+  //   loadAccountData();
+
+  //   return () => {
+  //     isMounted = false;
+  //   };
+  // }, []);
+
   useEffect(() => {
-    let isMounted = true;
+  let isMounted = true;
 
-    async function loadAccountData() {
-      try {
-        setLoading(true);
-        setError(null);
+  async function loadAccountData() {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await getAccount();
-        const payload = response?.data ?? response;
+      const response = await getAccount(customerId);
 
-        if (
-          isMounted &&
-          payload &&
-          typeof payload === "object"
-        ) {
-          setAccountApiData(payload);
-        }
-      } catch (err) {
-        console.error("Account 360 API Error:", err);
+      const payload = response?.data ?? response;
 
-        if (isMounted) {
-          setError(err);
-          setAccountApiData(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (
+        isMounted &&
+        payload &&
+        typeof payload === "object"
+      ) {
+        setAccountApiData(payload);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (isMounted) {
+        setLoading(false);
       }
     }
+  }
 
-    loadAccountData();
+  loadAccountData();
 
     return () => {
       isMounted = false;
     };
-  }, []);
-
+  }, [customerId]);
   const resolvedAccountData =
     accountApiData?.account360 ??
     accountApiData ??

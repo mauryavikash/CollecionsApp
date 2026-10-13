@@ -1,9 +1,13 @@
+import { useRouter } from "next/navigation";
+
 export default function PromiseToPayCard({
   filters = [],
   activeFilter,
   onFilterChange,
   records = [],
 }) {
+  const router = useRouter();
+
   return (
     <>
       <section className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -29,14 +33,16 @@ export default function PromiseToPayCard({
           >
             <div className="flex justify-between gap-2">
               <div>
-                <h2 className="text-[13px] font-bold text-slate-800">
+               <h2
+                  onClick={() => {
+                    router.push(`/account?id=${record.id}`);
+                  }}
+                  className="cursor-pointer text-[13px] font-bold text-slate-800 hover:text-blue-600"
+                >
                   {record.customer}
                 </h2>
                 <p className="text-[9px] text-slate-400">{record.invoice}</p>
               </div>
-              {/* <span className="rounded bg-blue-100 px-2 py-1 text-[8px] font-semibold text-blue-600">
-                ● {record.status}
-              </span> */}
               <span
                 className={`inline-flex h-6 w-[70px] items-center justify-center rounded px-2 py-1 text-[8px] font-semibold ${
                   record.status?.toLowerCase() === "partial"
