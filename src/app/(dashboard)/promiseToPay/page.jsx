@@ -46,6 +46,7 @@ function normalizeRecord(record = {}) {
   const customer = record?.customer ?? "";
 
   return {
+    id: record?.id,
     customer: withFallback(customer),
     invoice: withFallback(record?.invoice),
     amount: withFallback(record?.amount ?? record?.ptpAmount),

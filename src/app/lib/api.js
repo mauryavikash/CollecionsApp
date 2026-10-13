@@ -212,20 +212,45 @@ export async function getPromiseToPay() {
   return promiseToPayRequest;
 }
 
-export async function getAccount() {
-  if (!accountRequest) {
-    accountRequest = axiosInstance
-      .get("ui/account360/32342")
-      .then((response) => response.data)
-      .catch((error) => {
-        accountRequest = undefined;
-        throw error;
-      });
-  }
+// export async function getAccount() {
+//   if (!accountRequest) {
+//     accountRequest = axiosInstance
+//       .get(`ui/account360/32342`)
+//       .then((response) => response.data)
+//       .catch((error) => {
+//         accountRequest = undefined;
+//         throw error;
+//       });
+//   }
 
-  return accountRequest;
+//   return accountRequest;
+// }
+
+export async function getAccount(customerId = "32342") {
+  const response = await axiosInstance.get(
+    `ui/account360/${customerId}`
+  );
+
+  return response.data;
 }
 
+// Add Note
+export async function addNote(payload) {
+  const response = await axiosInstance.post("ui/notes", payload);
+  return response.data;
+}
+
+// Edit Note
+export async function updateNote(noteId, payload) {
+  const response = await axiosInstance.put(`ui/notes/${noteId}`, payload);
+  return response.data;
+}
+
+// Delete Note
+export async function deleteNote(noteId) {
+  const response = await axiosInstance.delete(`ui/notes/${noteId}`);
+  return response.data;
+}
 // export async function sendCopilotMessage(message, userId, userName) {
 //   const response = await axiosInstance.post("v1/copilot/chat", {
 //     userId,

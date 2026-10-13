@@ -6,8 +6,9 @@ const statusClasses = {
   Partial: "bg-amber-50 text-amber-600",
   Fulfilled: "bg-emerald-50 text-emerald-600",
 };
-
+import { useRouter } from "next/navigation";
 export default function CollectionTable({ activity = [] }) {
+  const router = useRouter();
   return (
     <section className="rounded-[11px] border border-slate-200 bg-white px-3 py-2.5 shadow-[0_2px_5px_rgba(38,82,144,.08)]">
       <div className="mb-2 flex justify-between">
@@ -45,7 +46,17 @@ export default function CollectionTable({ activity = [] }) {
                 className="border-t border-slate-200 hover:bg-slate-50"
               >
                 <td className="px-2.5 py-2.5 font-semibold text-blue-600">
-                  <button type="button">{item.customer}</button>
+                  {/* <button type="button">{item.customer}</button> */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(`/account?id=${item.id}`)
+                  }
+                  className="hover:text-blue-600 cursor-pointer"
+                >
+                  {item.customer}
+                </button>
+
                 </td>
                 <td className="px-2.5 py-2.5 font-bold">{item.amount}</td>
                 <td className="px-2.5 py-2.5 text-slate-500">
