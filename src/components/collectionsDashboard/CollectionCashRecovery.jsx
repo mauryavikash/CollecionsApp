@@ -140,12 +140,12 @@ export default function CollectionCashRecovery({
             TOP RISK ACCOUNTS
           </h2>
 
-          <button
+          {/* <button
             type="button"
             className="text-[9px] font-semibold text-blue-600"
           >
             View all
-          </button>
+          </button> */}
         </div>
 
         <div className="mt-2">

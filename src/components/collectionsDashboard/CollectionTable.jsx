@@ -15,12 +15,12 @@ export default function CollectionTable({ activity = [] }) {
         <h2 className="text-[11px] font-bold">
           RECENT PROMISE-TO-PAY (PTP) ACTIVITY
         </h2>
-        <button
+        {/* <button
           type="button"
           className="text-[9px] font-semibold text-blue-600"
         >
           Manage PTPs
-        </button>
+        </button> */}
       </div>
       <div className="overflow-x-auto rounded-md border border-slate-200">
         <table className="w-full min-w-[680px] text-left text-[8px]">
