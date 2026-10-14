@@ -1,9 +1,16 @@
 "use client";
-
+import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {ChevronDown,FilePenLine,Filter,Info,Plus,Search,} from "lucide-react";
-import {addNote,updateNote,deleteNote,} from "@/app/lib/api";
+import {
+  ChevronDown,
+  FilePenLine,
+  Filter,
+  Info,
+  Plus,
+  Search,
+} from "lucide-react";
+import { addNote, updateNote, deleteNote } from "@/app/lib/api";
 const riskStyles = {
   High: "bg-orange-100 text-orange-600",
   Medium: "bg-amber-100 text-amber-600",
@@ -44,59 +51,86 @@ function AccountRow({ account }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [noteText, setNoteText] = useState(account.note || "");
   const [newNote, setNewNote] = useState("");
+  const [selectedCollector, setSelectedCollector] = useState(
+    account.owner || "",
+  );
   const router = useRouter();
 
-const handleAddNote = async () => {
-  try {
-    const payload = {
-      customer_id: account.id,
-      note: newNote,
-    };
+  const handleAddNote = async () => {
+    const toastId = toast.loading("Adding note...");
 
-    const res = await addNote(payload);
+    try {
+      const payload = {
+        customer_id: account.id,
+        note: newNote,
+      };
 
-    console.log("Note Added", res);
+      await addNote(payload);
 
-    setShowAddModal(false);
-    setNewNote("");
+      toast.success("Note Added Successfully", {
+        id: toastId,
+      });
 
-    // alert("Note Added Successfully");
-  } catch (error) {
-    console.error(error);
-    // alert("Failed to add note");
-  }
-};
+      setShowAddModal(false);
+      setNewNote("");
+    } catch (error) {
+      console.error(error);
 
-const handleEditNote = async () => {
-  try {
-    const payload = {
-      note_id : account.id,
-      note: noteText,
-    };
+      toast.error(error?.response?.data?.message || "Failed to add note", {
+        id: toastId,
+      });
 
-    await updateNote(account.id, payload);
+      // Close popup on failure also
+      setShowAddModal(false);
+      setNewNote("");
+    }
+  };
+  const handleEditNote = async () => {
+    const toastId = toast.loading("Updating note...");
 
-    setEditing(false);
-    alert("Note Updated Successfully");
-  } catch (error) {
-    console.error(error);
-    alert("Failed to update note");
-  }
-};
-const handleDeleteNote = async () => {
-  try {
-    const payload = {
-      note_id : account.id,
-      note: noteText,
-    };
-    await deleteNote(account.id, payload);
+    try {
+      const payload = {
+        note_id: account.id,
+        note: noteText,
+      };
 
-    alert("Note Deleted Successfully");
-  } catch (error) {
-    console.error(error);
-    alert("Failed to delete note");
-  }
-};
+      await updateNote(account.id, payload);
+
+      setEditing(false);
+
+      toast.success("Note Updated Successfully", {
+        id: toastId,
+      });
+    } catch (error) {
+      console.error(error);
+
+      toast.error(error?.response?.data?.message || "Failed to update note", {
+        id: toastId,
+      });
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    const toastId = toast.loading("Deleting note...");
+    try {
+      const payload = {
+        note_id: account.id,
+        note: noteText,
+      };
+
+      await deleteNote(account.id, payload);
+
+      toast.success("Note Deleted Successfully", {
+        id: toastId,
+      });
+    } catch (error) {
+      console.error(error);
+
+      toast.error(error?.response?.data?.message || "Failed to delete note", {
+        id: toastId,
+      });
+    }
+  };
   return (
     <>
       <tr className="border-b border-slate-200 text-[10px] hover:bg-slate-50">
@@ -115,8 +149,8 @@ const handleDeleteNote = async () => {
           <button
             type="button"
             onClick={() => {
-                    router.push(`/account?id=${account.id}`);
-                  }}
+              router.push(`/account?id=${account.id}`);
+            }}
             className="block font-bold text-[#2872e0] cursor-pointer"
           >
             {account.customer}
@@ -129,9 +163,7 @@ const handleDeleteNote = async () => {
           <small className="text-[8px] text-slate-400">{account.share}</small>
         </td>
 
-        <td className="px-3 py-3 font-bold text-[#f04e55]">
-          {account.dpd}
-        </td>
+        <td className="px-3 py-3 font-bold text-[#f04e55]">{account.dpd}</td>
 
         <td className="px-3 py-3">{account.bucket}</td>
 
@@ -157,7 +189,7 @@ const handleDeleteNote = async () => {
 
         <td className="px-3 py-3">{account.date}</td>
 
-        <td className="px-3 py-3 whitespace-nowrap">
+        {/* <td className="px-3 py-3 whitespace-nowrap">
           <b
             className="mr-1 inline-grid h-5 w-5 place-items-center rounded-full text-[7px] text-white"
             style={{
@@ -170,6 +202,35 @@ const handleDeleteNote = async () => {
           {account.owner}
 
           <ChevronDown className="ml-1 inline h-3 w-3 text-blue-500" />
+        </td> */}
+        <td className="px-3 py-3 whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            <b
+              className="inline-grid h-5 w-5 place-items-center rounded-full text-[7px] text-white"
+              style={{
+                backgroundColor: account.avatarColor || "#2865dc",
+              }}
+            >
+              {selectedCollector
+                ?.split(" ")
+                ?.map((n) => n[0])
+                ?.join("")
+                ?.toUpperCase()
+                ?.slice(0, 2)}
+            </b>
+
+            <select
+              value={selectedCollector}
+              onChange={(e) => setSelectedCollector(e.target.value)}
+              className="border-0 bg-transparent text-[10px] font-medium text-slate-700 outline-none"
+            >
+              {(account.collectors || []).map((collector) => (
+                <option key={collector} value={collector}>
+                  {collector}
+                </option>
+              ))}
+            </select>
+          </div>
         </td>
 
         <td className="px-3 py-3 whitespace-nowrap">
@@ -197,18 +258,17 @@ const handleDeleteNote = async () => {
         <tr className="border-b border-slate-200 bg-slate-50">
           <td colSpan={10} className="px-9 py-2">
             {editing ? (
-                <textarea
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  className="w-full rounded border border-slate-300 p-2 text-[10px]"
-                />
-              ) : (
-                <p className="text-[10px] text-slate-600">
-                  <Info className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
-                  {noteText}
-                </p>
-              )}
-
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                className="w-full rounded border border-slate-300 p-2 text-[10px]"
+              />
+            ) : (
+              <p className="text-[10px] text-slate-600">
+                <Info className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
+                {noteText}
+              </p>
+            )}
 
             <div className="mt-1 flex items-center justify-between">
               <p className="space-x-3 text-[8px] text-slate-400">
@@ -246,42 +306,49 @@ const handleDeleteNote = async () => {
       )}
 
       {showAddModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div className="w-[500px] rounded-lg bg-white p-5 shadow-xl">
-      <h2 className="mb-4 text-lg font-semibold">
-        Add Note
-      </h2>
-
-      <textarea
-        value={newNote}
-        onChange={(e) => setNewNote(e.target.value)}
-        placeholder="Enter note..."
-        rows={5}
-        className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:border-blue-500"
-      />
-
-      <div className="mt-4 flex justify-end gap-2">
-        <button
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
           onClick={() => {
             setShowAddModal(false);
             setNewNote("");
           }}
-          className="rounded border border-slate-300 px-4 py-2 text-sm"
         >
-          Cancel
-        </button>
+          <div
+            className="w-[500px] rounded-lg bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-lg font-semibold">Add Note</h2>
 
-        <button
-          onClick={handleAddNote}
-          disabled={!newNote.trim()}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          Submit
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Enter note..."
+              rows={5}
+              className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:border-blue-500"
+            />
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewNote("");
+                }}
+                className="rounded border border-slate-300 px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleAddNote}
+                disabled={!newNote.trim()}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
