@@ -3,12 +3,12 @@ export default function Transactions({ transactions = [] }) {
     <section className="mt-4 overflow-hidden rounded-[11px] bg-white shadow-sm">
       <div className="flex justify-between border-b border-slate-200 px-3 py-3">
         <h2 className="text-[11px] font-bold">Open Invoices & Transactions</h2>
-        <button
+        {/* <button
           type="button"
           className="text-[9px] font-semibold text-blue-600"
         >
           + Add Invoice
-        </button>
+        </button> */}
       </div>
       <table className="w-full min-w-[760px] text-left text-[10px]">
         <thead className="bg-slate-100 text-[8px] text-slate-500">
