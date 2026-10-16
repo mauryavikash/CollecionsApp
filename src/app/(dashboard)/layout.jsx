@@ -13,7 +13,7 @@ import { Toaster } from "sonner";
 export default function DashboardLayout({ children }) {
     const router = useRouter();
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
