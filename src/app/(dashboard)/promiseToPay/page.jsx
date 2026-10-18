@@ -112,7 +112,7 @@ function Select({ value, onChange, options, label }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-[25px] appearance-none rounded-md border border-slate-200 bg-white px-2 pr-6 text-[9px] text-slate-600 outline-none"
+        className="h-[35px] appearance-none rounded-md border border-slate-200 bg-white px-2 pr-6 text-[12px] text-slate-600 outline-none"
       >
         <option value="All">All</option>
 
@@ -204,63 +204,6 @@ export default function PromiseToPayPage() {
       "Fulfilled",
     ];
   }, [resolvedPromiseData]);
-
-  // const records = useMemo(() => {
-  //   const normalizedStatus = normalizeStatusValue(status);
-  //   const normalizedActiveFilter = normalizeStatusValue(activeFilter);
-
-  //   return (resolvedPromiseData?.records ?? []).filter(
-  //     (record) => {
-  //       const recordStatus = normalizeStatusValue(record?.status);
-
-  //       return (
-  //       (record?.customer ?? "")
-  //         .toLowerCase?.()
-  //         .includes(query.toLowerCase()) &&
-  //       (status === "All" || recordStatus === normalizedStatus) &&
-  //       (activeFilter === "All" ||
-  //         recordStatus === normalizedActiveFilter)
-  //       );
-  //     }
-  //   );
-  // }, [query, status, activeFilter, resolvedPromiseData]);
-
-//   const records = useMemo(() => {
-//   return (resolvedPromiseData?.records ?? []).filter((record) => {
-//     const customer = String(record?.customer ?? "")
-//       .toLowerCase()
-//       .includes(query.toLowerCase());
-
-//     const recordStatus = normalizeStatusValue(record?.status);
-
-//     let tabMatch = true;
-
-//     if (activeFilter === "Active") {
-//       tabMatch = recordStatus === "open promise";
-//     } else if (activeFilter === "Fulfilled") {
-//       tabMatch = recordStatus === "fulfilled";
-//     } else if (activeFilter === "Broken") {
-//       tabMatch = recordStatus === "broken";
-//     } else if (activeFilter === "Due Soon") {
-//       tabMatch = recordStatus === "due soon";
-//     }
-
-//     let dropdownMatch = true;
-
-//     if (status !== "All") {
-//       dropdownMatch =
-//         recordStatus === normalizeStatusValue(status);
-//     }
-
-//     return customer && tabMatch && dropdownMatch;
-//   });
-// }, [
-//   query,
-//   status,
-//   activeFilter,
-//   resolvedPromiseData,
-// ]);
-  
 const records = useMemo(() => {
   const normalizedActiveFilter =
     normalizeStatusValue(activeFilter);
@@ -314,7 +257,7 @@ const records = useMemo(() => {
                 setQuery(event.target.value)
               }
               placeholder="Search by customer name..."
-              className="h-[25px] w-full rounded-md border border-slate-200 bg-white pl-7 text-[10px] outline-none"
+              className="h-[35px] w-full rounded-md border border-slate-200 bg-white pl-7 text-[12px] outline-none"
             />
           </label>
 
@@ -332,7 +275,7 @@ const records = useMemo(() => {
             options={[]}
           />
 
-          <span className="rounded-md bg-white px-2 py-[6px] text-[9px] font-semibold text-slate-600">
+          <span className="rounded-md bg-white px-2 py-[6px] text-[12px] font-semibold text-slate-600">
             {records.length} records
           </span>
         </header>

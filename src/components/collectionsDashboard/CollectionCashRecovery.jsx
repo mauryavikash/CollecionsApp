@@ -1,9 +1,11 @@
+
 "use client";
 
 import {
   Bar,
   BarChart,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -22,7 +24,6 @@ export default function CollectionCashRecovery({
   forecast = [],
   riskAccounts = [],
 }) {
-
   const chartData = forecast.map((item) => ({
     ...item,
     actual:
@@ -31,22 +32,23 @@ export default function CollectionCashRecovery({
         : null,
     projected: Number(item.projected) || 0,
   }));
+
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.8fr_1.2fr]">
       {/* CASH RECOVERY FORECAST */}
-      <Panel className="h-[163px]">
+      <Panel className="min-h-[300px]">
         <div className="flex justify-between">
           <div>
-            <h2 className="text-[11px] font-bold">
+            <h2 className="text-[13px] font-bold">
               CASH RECOVERY FORECAST
             </h2>
 
-            <p className="text-[8px] text-slate-500">
+            <p className="text-[9px] text-slate-500">
               Projected vs actual · Next 30 days
             </p>
           </div>
 
-          <div className="flex items-center gap-3 text-[8px] text-slate-500">
+          <div className="flex items-center gap-3 text-[9px] text-slate-500">
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-sm bg-[#2265bd]" />
               Actual
@@ -60,7 +62,7 @@ export default function CollectionCashRecovery({
         </div>
 
         <div
-          className="h-[115px]"
+          className="h-[250px] mt-2"
           role="img"
           aria-label="Cash recovery forecast through month two"
         >
@@ -76,6 +78,19 @@ export default function CollectionCashRecovery({
                 bottom: 5,
               }}
             >
+              <Tooltip
+                cursor={{ fill: "rgba(34,101,189,0.06)" }}
+                formatter={(value, name) => [
+                  `${value} ${forecast?.[0]?.unit || ""}`,
+                  name === "actual" ? "Actual" : "Projected",
+                ]}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  fontSize: "12px",
+                }}
+              />
+
               <XAxis
                 dataKey="label"
                 tickLine={false}
@@ -86,35 +101,21 @@ export default function CollectionCashRecovery({
                 }}
               />
 
-              {/* <YAxis
-                domain={[0, "dataMax + 5000"]}
-                tickFormatter={(value) =>
-                  `${Math.round(value / 1000)}K`
-                }
-                tickLine={false}
-                axisLine={false}
-                tick={{
-                  fontSize: 8,
-                  fill: "#64748b",
-                }}
-                width={40}
-              /> */}
-
               <YAxis
                 domain={[
                   0,
                   (dataMax) => Math.ceil(dataMax * 1.2),
                 ]}
                 tickFormatter={(value) =>
-                  `${value} ${forecast?.[0]?.unit || ""}`
+                  `${value}${forecast?.[0]?.unit ? ` ${forecast[0].unit}` : ""}`
                 }
                 tickLine={false}
                 axisLine={false}
                 tick={{
-                  fontSize: 8,
+                  fontSize: 9,
                   fill: "#64748b",
                 }}
-                width={50}
+                width={60}
               />
 
               <Bar
@@ -133,48 +134,92 @@ export default function CollectionCashRecovery({
         </div>
       </Panel>
 
-      {/* TOP RISK ACCOUNTS */}
-      <Panel className="h-[163px]">
-        <div className="flex justify-between">
-          <h2 className="text-[11px] font-bold">
-            TOP RISK ACCOUNTS
-          </h2>
+{/* TOP RISK ACCOUNTS */}
+<Panel className="min-h-[300px]">
+  <h2 className="mb-3 text-[13px] font-bold">
+    TOP RISK ACCOUNTS
+  </h2>
 
-          {/* <button
-            type="button"
-            className="text-[9px] font-semibold text-blue-600"
-          >
-            View all
-          </button> */}
+  <div className="overflow-hidden rounded-lg border border-slate-200">
+    {/* Header */}
+    <div className="grid grid-cols-[90px_1fr_90px_140px] bg-slate-50 px-4 py-3 text-[11px] font-bold text-slate-600">
+      <div>RISK</div>
+      <div>CUSTOMER</div>
+      <div className="text-center">DPD</div>
+      <div className="text-right">OVERDUE AMOUNT</div>
+    </div>
+
+    {/* Rows */}
+    <div
+      className="overflow-y-auto"
+      style={{ height: "250px" }}
+    >
+      {riskAccounts?.length > 0 ? (
+        <table className="w-full table-fixed">
+          <tbody>
+            {riskAccounts.map((account, index) => (
+              <tr
+                key={account.id || index}
+                className="border-t border-slate-100"
+              >
+                {/* Risk */}
+                <td className="w-[90px] px-4 py-4 align-top">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full text-[20px] font-bold text-white"
+                    style={{
+                      backgroundColor:
+                        account.segmentColor || "#f2545b",
+                    }}
+                  >
+                    {account.riskScore}
+                  </div>
+                </td>
+
+                {/* Customer */}
+                <td className="px-2 py-4 align-top">
+                  <div
+                    className="truncate text-[13px] font-semibold text-slate-800"
+                    title={account.customer}
+                  >
+                    {account.customer}
+                  </div>
+
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    {account.dpd} DPD • {account.dpdBucket}
+                  </div>
+                </td>
+
+                {/* DPD */}
+                <td className="w-[90px] px-2 py-4 text-center align-top">
+                  <div className="text-[16px] font-semibold text-slate-700">
+                    {account.dpd}
+                  </div>
+                </td>
+
+                {/* Overdue Amount */}
+                <td className="w-[140px] px-4 py-4 text-right align-top">
+                  <div
+                    className="text-[16px] font-bold"
+                    style={{
+                      color:
+                        account.segmentColor || "#f2545b",
+                    }}
+                  >
+                    {account.overdueAmount}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="py-8 text-center text-sm text-slate-500">
+          No risk accounts available
         </div>
-
-        <div className="mt-2">
-          {riskAccounts.map((account) => (
-            <div
-              key={account.name}
-              className="flex h-[28px] items-center border-b border-slate-100 last:border-0"
-            >
-              <b className="mr-2 grid h-4 w-4 place-items-center rounded-full bg-[#f2545b] text-[7px] text-white">
-                {account.score}
-              </b>
-
-              <div className="min-w-0 flex-1 leading-tight">
-                <p className="truncate text-[9px] font-bold">
-                  {account.name}
-                </p>
-
-                <p className="text-[7px] text-slate-500">
-                  {account.detail}
-                </p>
-              </div>
-
-              <b className="text-[9px] text-[#f2545b]">
-                {account.amount}
-              </b>
-            </div>
-          ))}
-        </div>
-      </Panel>
+      )}
+    </div>
+  </div>
+</Panel>
     </div>
   );
 }
