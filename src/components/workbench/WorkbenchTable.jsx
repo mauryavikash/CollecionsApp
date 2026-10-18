@@ -1,6 +1,6 @@
 "use client";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -33,7 +33,7 @@ function MiniSelect({ value, onChange, options, filter }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`h-[26px] appearance-none rounded-md border border-slate-200 bg-white ${filter ? "pl-6" : "pl-2"} pr-6 text-[9px] text-slate-600 outline-none focus:border-blue-500`}
+        className={`h-[26px] appearance-none rounded-md border border-slate-200 bg-white ${filter ? "pl-6" : "pl-2"} pr-6 text-[12px] text-slate-600 outline-none focus:border-blue-500`}
       >
         <option>All</option>
         {options.map((option) => (
@@ -133,7 +133,7 @@ function AccountRow({ account }) {
   };
   return (
     <>
-      <tr className="border-b border-slate-200 text-[10px] hover:bg-slate-50">
+      <tr className="border-b border-slate-200 text-[12px] hover:bg-slate-50">
         <td className="w-[68px] px-3 py-3">
           <div className="flex items-center gap-2 whitespace-nowrap">
             <input
@@ -155,12 +155,12 @@ function AccountRow({ account }) {
           >
             {account.customer}
           </button>
-          <small className="text-[8px] text-slate-400">{account.id}</small>
+          <small className="text-[12px] text-slate-400">{account.id}</small>
         </td>
 
         <td className="px-3 py-3">
           <b className="block text-[#f04e55]">{account.overdue}</b>
-          <small className="text-[8px] text-slate-400">{account.share}</small>
+          <small className="text-[12px] text-slate-400">{account.share}</small>
         </td>
 
         <td className="px-3 py-3 font-bold text-[#f04e55]">{account.dpd}</td>
@@ -169,7 +169,7 @@ function AccountRow({ account }) {
 
         <td className="px-3 py-3">
           <span
-            className={`inline-flex min-w-[46px] justify-center rounded-md px-2 py-1 text-[8px] font-semibold ${
+            className={`inline-flex min-w-[46px] justify-center rounded-md px-2 py-1 text-[12px] font-semibold ${
               riskStyles[account.risk]
             }`}
           >
@@ -179,7 +179,7 @@ function AccountRow({ account }) {
 
         <td className="px-3 py-3">
           <span
-            className={`inline-flex min-w-[54px] justify-center rounded-md px-2 py-1 text-[8px] font-semibold ${
+            className={`inline-flex min-w-[54px] justify-center rounded-md px-2 py-1 text-[12px] font-semibold ${
               ptpStyles[account.ptp]
             }`}
           >
@@ -222,7 +222,7 @@ function AccountRow({ account }) {
             <select
               value={selectedCollector}
               onChange={(e) => setSelectedCollector(e.target.value)}
-              className="border-0 bg-transparent text-[10px] font-medium text-slate-700 outline-none"
+              className="border-0 bg-transparent text-[12px] font-medium text-slate-700 outline-none"
             >
               {(account.collectors || []).map((collector) => (
                 <option key={collector} value={collector}>
@@ -237,7 +237,7 @@ function AccountRow({ account }) {
           <button
             type="button"
             onClick={() => setShowNotes((prev) => !prev)}
-            className="block text-[8px] font-semibold text-blue-600"
+            className="block text-[12px] font-semibold text-blue-600"
           >
             <FilePenLine className="mr-1 inline h-3 w-3" />
             {showNotes ? "Hide Notes" : "View Notes"}
@@ -246,7 +246,7 @@ function AccountRow({ account }) {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="mt-1 text-[8px] font-semibold text-blue-600"
+            className="mt-1 text-[12px] font-semibold text-blue-600"
           >
             <Plus className="mr-1 inline h-3 w-3" />
             Add Note
@@ -261,17 +261,17 @@ function AccountRow({ account }) {
               <textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                className="w-full rounded border border-slate-300 p-2 text-[10px]"
+                className="w-full rounded border border-slate-300 p-2 text-[12px]"
               />
             ) : (
-              <p className="text-[10px] text-slate-600">
+              <p className="text-[12px] text-slate-600">
                 <Info className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
                 {noteText}
               </p>
             )}
 
             <div className="mt-1 flex items-center justify-between">
-              <p className="space-x-3 text-[8px] text-slate-400">
+              <p className="space-x-3 text-[12px] text-slate-400">
                 <span>Last contact: {account.lastContact}</span>
                 <span>Broken PTPs: 3</span>
                 <span>Fulfilled PTPs: 1</span>
@@ -287,7 +287,7 @@ function AccountRow({ account }) {
                       setEditing(true);
                     }
                   }}
-                  className="rounded bg-white px-2 py-1 text-[8px] text-blue-600"
+                  className="rounded bg-white px-2 py-1 text-[12px] text-blue-600"
                 >
                   {editing ? "Save Note" : "Edit Note"}
                 </button>
@@ -295,7 +295,7 @@ function AccountRow({ account }) {
                 <button
                   type="button"
                   onClick={handleDeleteNote}
-                  className="rounded bg-white px-2 py-1 text-[8px] text-rose-500"
+                  className="rounded bg-white px-2 py-1 text-[12px] text-rose-500"
                 >
                   Delete Note
                 </button>
@@ -357,6 +357,8 @@ export default function WorkbenchTable({ accounts: accountData = [] }) {
   const [risk, setRisk] = useState("All");
   const [ptp, setPtp] = useState("All");
   const [bucket, setBucket] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const accounts = useMemo(
     () =>
       accountData.filter(
@@ -370,7 +372,12 @@ export default function WorkbenchTable({ accounts: accountData = [] }) {
       ),
     [accountData, bucket, ptp, query, risk],
   );
+  const totalPages = Math.ceil(accounts.length / itemsPerPage);
 
+  const paginatedAccounts = accounts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
   return (
     <>
       <section className="mt-[18px] flex flex-wrap items-center gap-2">
@@ -381,7 +388,7 @@ export default function WorkbenchTable({ accounts: accountData = [] }) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search by customer or account #..."
-            className="h-[26px] w-full rounded-md border border-slate-200 bg-white pl-7 text-[10px] outline-none"
+            className="h-[26px] w-full rounded-md border border-slate-200 bg-white pl-7 text-[12px] outline-none"
           />
         </label>
         <MiniSelect
@@ -400,7 +407,7 @@ export default function WorkbenchTable({ accounts: accountData = [] }) {
           onChange={setBucket}
           options={["181+ days", "91-180 days", "61-90 days"]}
         />
-        <span className="text-[10px] text-slate-500">
+        <span className="text-[12px] text-slate-500">
           {accounts.length} accounts
         </span>
       </section>
@@ -408,7 +415,7 @@ export default function WorkbenchTable({ accounts: accountData = [] }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[990px] border-collapse text-left">
             <thead className="border-b border-slate-200 bg-slate-50">
-              <tr className="text-[8px] font-bold text-slate-500">
+              <tr className="text-[12px] font-bold text-slate-500">
                 <th className="w-[68px] px-3 py-2">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <input
@@ -437,11 +444,91 @@ export default function WorkbenchTable({ accounts: accountData = [] }) {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account) => (
+              {paginatedAccounts.map((account) => (
                 <AccountRow key={account.id} account={account} />
               ))}
             </tbody>
           </table>
+          <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
+            {/* Left Side */}
+            <div className="text-[13px] text-slate-500">
+              Showing{" "}
+              {accounts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+              -{Math.min(currentPage * itemsPerPage, accounts.length)} of{" "}
+              {accounts.length} accounts
+            </div>
+
+            {/* Right Side */}
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] text-slate-500">Rows per page</span>
+
+              <select
+                value={itemsPerPage}
+                className="h-8 rounded-md border border-slate-200 px-2 text-[13px]"
+                disabled
+              >
+                <option>10</option>
+              </select>
+
+              {/* Previous */}
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ‹
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  const page = i + 1;
+
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`h-8 w-8 rounded-md text-sm font-medium ${
+                        currentPage === page
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+
+                {totalPages > 5 && (
+                  <>
+                    <span className="px-1 text-slate-400">...</span>
+
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      className={`h-8 w-8 rounded-md text-sm font-medium ${
+                        currentPage === totalPages
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Next */}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ›
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </>
