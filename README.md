@@ -146,6 +146,9 @@ The frontend is designed to support multiple user roles, including:
 
 # Project Modules
 
+## Promise To Pay Layout
+The page shows filters and KPI cards first, followed by All Promises cards and the records table. PTP analytics charts appear below the promise records.
+
 #
 
 ## 1. Auth Module

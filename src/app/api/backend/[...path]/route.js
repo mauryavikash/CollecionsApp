@@ -20,7 +20,16 @@ function getRequiredEnvironment(name) {
   return value;
 }
 
+// Cache the service principal token in memory until shortly before it expires.
+let cachedToken = null;
+let cachedTokenExpiresAt = 0;
+const TOKEN_REFRESH_MARGIN_MS = 60_000;
+
 async function getServicePrincipalToken() {
+  if (cachedToken && Date.now() < cachedTokenExpiresAt - TOKEN_REFRESH_MARGIN_MS) {
+    return cachedToken;
+  }
+
   const host = getRequiredEnvironment("DATABRICKS_HOST")
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
@@ -40,12 +49,14 @@ async function getServicePrincipalToken() {
     throw new Error(`Databricks OAuth request failed with status ${response.status}`);
   }
 
-  const { access_token: accessToken } = await response.json();
+  const { access_token: accessToken, expires_in: expiresIn } = await response.json();
 
   if (!accessToken) {
     throw new Error("Databricks OAuth response did not include an access token");
   }
 
+  cachedToken = accessToken;
+  cachedTokenExpiresAt = Date.now() + (Number(expiresIn) || 3600) * 1000;
   return accessToken;
 }
 
@@ -77,13 +88,16 @@ async function proxyRequest(request, paramsPromise) {
     targetUrl.search = requestUrl.search;
 
     const headers = new Headers();
-    const authorization = request.headers.get("authorization");
+    const userAuthorization = request.headers.get("authorization");
     const contentType = request.headers.get("content-type");
 
-    headers.set(
-      "authorization",
-      authorization ?? `Bearer ${await getServicePrincipalToken()}`
-    );
+    // The Databricks Apps gateway only accepts a Databricks OAuth token, so always
+    // authenticate with the service principal. The signed-in user's app token (from
+    // /auth/login) is forwarded separately so the backend can still read it.
+    headers.set("authorization", `Bearer ${await getServicePrincipalToken()}`);
+    if (userAuthorization) {
+      headers.set("x-app-authorization", userAuthorization);
+    }
 
     if (contentType) {
       headers.set("content-type", contentType);
