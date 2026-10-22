@@ -1,293 +1,320 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CalendarDays, ChevronDown, RefreshCw, X } from "lucide-react";
+import PtpKpiCards from "@/components/promiseToPay/PtpKpiCards";
+import PtpCharts, { PeriodSelect } from "@/components/promiseToPay/PtpCharts";
 import PromiseToPayCard from "@/components/promiseToPay/PromiseToPayCard";
 import PromiseToPayTable from "@/components/promiseToPay/PromiseToPayTable";
 import { LoadingState } from "@/components/common/LoadingState";
-import { getPromiseToPay } from "@/app/lib/api";
+import { getPromiseToPay, getPtpAnalytics } from "@/app/lib/api";
+import {
+  PTP_TABS,
+  buildPtpAnalytics,
+  countByTab,
+  mapBackendPtpAnalytics,
+  matchesTab,
+  normalizePtpRecords,
+} from "@/components/promiseToPay/ptpAnalytics";
 
-const DEFAULT_AVATAR_CLASS = "bg-[#214cad]";
-
-function getInitials(value = "") {
-  const words = String(value)
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!words.length) {
-    return "NA";
-  }
-
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
+function monthLabel(value) {
+  if (!value || value === "all") return "All months";
+  const [year, month] = String(value).split("-").map(Number);
+  if (!year || !month) return value;
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-function withFallback(value, fallback = "-") {
-  if (value === null || value === undefined || value === "") {
-    return fallback;
-  }
+const PAGE_SIZES = [6, 12, 24, 48];
 
-  return value;
-}
-
-function normalizeStatusValue(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-function normalizeRecord(record = {}) {
-  const owner = record?.owner ?? record?.collectionOwner ?? "";
-  const customer = record?.customer ?? "";
-
-  return {
-    id: record?.id,
-    customer: withFallback(customer),
-    invoice: withFallback(record?.invoice),
-    amount: withFallback(record?.amount ?? record?.ptpAmount),
-    created: withFallback(record?.created ?? record?.creationDate),
-    promiseDate: withFallback(record?.promiseDate),
-    dueDate: withFallback(record?.dueDate),
-    status: withFallback(record?.status, "Active"),
-    owner: withFallback(owner),
-    initials: withFallback(
-      record?.initials,
-      getInitials(owner || customer)
-    ),
-    avatar: withFallback(record?.avatar, DEFAULT_AVATAR_CLASS),
-    note: withFallback(record?.note),
-    followUp: withFallback(record?.followUp),
-  };
-}
-
-function normalizePromiseToPayData(payload = {}) {
-  const recordsSource =
-    payload?.records ??
-    payload?.promiseToPayRecords ??
-    [];
-  const records = recordsSource.map(normalizeRecord);
-
-  const countsSource = payload?.filters ?? payload?.counts ?? [];
-  const normalizedCounts = countsSource.map((item) => ({
-    label: item?.label,
-    count: Number(item?.count) || 0,
-  }));
-
-  if (normalizedCounts.length) {
-    return { records, filters: normalizedCounts };
-  }
-
-  const statusCounts = records.reduce((acc, record) => {
-    const status = record?.status;
-
-    if (!status || status === "-") {
-      return acc;
-    }
-
-    acc[status] = (acc[status] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  return {
-    records,
-    filters: [
-      { label: "All", count: records.length },
-      ...Object.entries(statusCounts).map(
-        ([label, count]) => ({ label, count })
-      ),
-    ],
-  };
-}
-
-function Select({ value, onChange, options, label }) {
+function FilterSelect({ value, onChange, allLabel, options, disabled }) {
   return (
-    <label className="relative">
-      <span className="sr-only">{label}</span>
-
+    <label className="relative inline-flex">
+      <span className="sr-only">{allLabel}</span>
       <select
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="h-[35px] appearance-none rounded-md border border-slate-200 bg-white px-2 pr-6 text-[12px] text-slate-600 outline-none"
+        className="h-8 min-w-[150px] appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-[12px] font-semibold text-blue-700 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        <option value="All">All</option>
-
+        <option value="All">{allLabel}</option>
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
           </option>
         ))}
       </select>
-
-      <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-400" />
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
     </label>
   );
 }
 
+function formatAsOn(date) {
+  if (!date) return "";
+  const day = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `${day} | ${time}`;
+}
+
 export default function PromiseToPayPage() {
-  const [promiseApiData, setPromiseApiData] = useState(null);
+  const [payload, setPayload] = useState(null);
+  const [fetchedAt, setFetchedAt] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("All");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeTab, setActiveTab] = useState("All");
+  const [collector, setCollector] = useState("All");
+  const [region, setRegion] = useState("All");
+  const [period, setPeriod] = useState(6);
+  const [promiseDate, setPromiseDate] = useState("");
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const [page, setPage] = useState(1);
+  // "" = backend default (latest completed month); otherwise YYYY-MM or "all".
+  const [month, setMonth] = useState("");
+  const [analyticsPayload, setAnalyticsPayload] = useState(null);
+  const [analyticsVersion, setAnalyticsVersion] = useState(0);
+
+  const load = useCallback(
+    ({ force = false } = {}) =>
+      getPromiseToPay({ force, month: month || undefined })
+        .then((response) => {
+          setError(null);
+          setPayload(response?.data ?? response ?? null);
+          setFetchedAt(new Date());
+        })
+        .catch((err) => {
+          console.error("Promise To Pay API Error:", err);
+          setError(err);
+        })
+        .finally(() => {
+          setLoading(false);
+          setRefreshing(false);
+        }),
+    [month],
+  );
 
   useEffect(() => {
-    let isMounted = true;
+    load();
+  }, [load]);
 
-    async function loadPromiseToPay() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await getPromiseToPay();
-        const payload = response?.data ?? response;
-        const hasPayload = Boolean(
-          payload &&
-          typeof payload === "object" &&
-          Object.keys(payload)?.length
-        );
-
-        if (isMounted) {
-          setPromiseApiData(hasPayload ? payload : null);
-        }
-      } catch (error) {
-        console.error("Promise To Pay API Error:", error);
-        if (isMounted) {
-          setError(error);
-          setPromiseApiData(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadPromiseToPay();
-
+  // KPI cards and charts come from GET /ui/ptp-analytics. If that endpoint is not
+  // available (older backend deployment), the page falls back to client-side analytics.
+  useEffect(() => {
+    let cancelled = false;
+    getPtpAnalytics({ months: period, collector: collector === "All" ? "all" : collector, month: month || undefined })
+      .then((response) => {
+        if (!cancelled) setAnalyticsPayload(response?.data ?? response ?? null);
+      })
+      .catch((err) => {
+        console.warn("PTP analytics API unavailable, using client-side analytics:", err?.response?.status ?? err);
+        if (!cancelled) setAnalyticsPayload(null);
+      });
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, []);
+  }, [period, collector, month, analyticsVersion]);
 
-  const resolvedPromiseData = useMemo(() => {
-    const payload =
-      promiseApiData?.promiseToPay ??
-      promiseApiData ??
-      {};
+  const allRecords = useMemo(() => {
+    const source = payload?.promiseToPay ?? payload ?? {};
+    return normalizePtpRecords(source.promiseToPayRecords ?? source.records ?? []);
+  }, [payload]);
 
-    return normalizePromiseToPayData(payload);
-  }, [promiseApiData]);
+  const collectorOptions = useMemo(() => {
+    const fromAnalytics = (analyticsPayload?.filters?.collectors ?? []).filter((name) => name && name !== "All Collectors");
+    const fromRecords = allRecords.map((record) => record.owner).filter((name) => name && name !== "Unassigned");
+    return [...new Set([...fromAnalytics, ...fromRecords])].sort();
+  }, [allRecords, analyticsPayload]);
+  const monthOptions = useMemo(() => {
+    const source = payload?.promiseToPay ?? payload ?? {};
+    return source.availableMonths ?? [];
+  }, [payload]);
+  const selectedMonth = month || (payload?.promiseToPay ?? payload)?.period?.month || "";
+  const regionOptions = useMemo(
+    () => [...new Set(allRecords.map((record) => record.region).filter(Boolean))].sort(),
+    [allRecords],
+  );
 
-  const statusOptions = useMemo(() => {
-    const fromFilters = (resolvedPromiseData?.filters ?? [])
-      .map((filter) => filter?.label)
-      .filter(
-        (label) =>
-          label &&
-          label !== "All"
-      );
+  const scopedRecords = useMemo(
+    () =>
+      allRecords.filter(
+        (record) =>
+          (collector === "All" || record.owner === collector) &&
+          (region === "All" || record.region === region),
+      ),
+    [allRecords, collector, region],
+  );
 
-    if (fromFilters.length) {
-      return fromFilters;
-    }
+  const tabs = useMemo(() => countByTab(scopedRecords), [scopedRecords]);
+  const analytics = useMemo(
+    () =>
+      analyticsPayload?.kpis && region === "All"
+        ? mapBackendPtpAnalytics(analyticsPayload)
+        : buildPtpAnalytics(scopedRecords, period),
+    [analyticsPayload, region, scopedRecords, period],
+  );
+  const asOnLabel = analytics.asOfLabel ?? `As on ${formatAsOn(fetchedAt)}`;
 
-    return [
-      "Active",
-      "Due Soon",
-      "Broken",
-      "Fulfilled",
-    ];
-  }, [resolvedPromiseData]);
-const records = useMemo(() => {
-  const normalizedActiveFilter =
-    normalizeStatusValue(activeFilter);
+  const visibleRecords = useMemo(
+    () =>
+      scopedRecords.filter(
+        (record) => matchesTab(record, activeTab) && (!promiseDate || record.promiseDate === promiseDate),
+      ),
+    [scopedRecords, activeTab, promiseDate],
+  );
 
-  const normalizedStatus =
-    normalizeStatusValue(status);
+  const totalPages = Math.max(1, Math.ceil(visibleRecords.length / pageSize));
+  const safePage = Math.min(page, totalPages);
 
-  return (resolvedPromiseData?.records ?? []).filter((record) => {
-    const customerMatch = String(record?.customer ?? "")
-      .toLowerCase()
-      .includes(query.toLowerCase());
+  const updateFilter = (setter) => (value) => {
+    setter(value);
+    setPage(1);
+  };
 
-    const recordStatus = normalizeStatusValue(record?.status);
-
-    const tabMatch =
-      activeFilter === "All"
-        ? true
-        : recordStatus === normalizedActiveFilter;
-
-    const dropdownMatch =
-      status === "All"
-        ? true
-        : recordStatus === normalizedStatus;
-
-    return customerMatch && tabMatch && dropdownMatch;
-  });
-  }, [
-    query,
-    status,
-    activeFilter,
-    resolvedPromiseData,
-  ]);
   if (loading) {
     return <LoadingState label="Loading promise to pay data..." />;
   }
 
+  if (error && !payload) {
+    return (
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-center">
+        <h2 className="text-[15px] font-bold text-slate-700">Unable to load promise-to-pay data</h2>
+        <p className="text-[12px] text-slate-500">Status {error?.response?.status ?? "unknown"}. Please try again.</p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            load({ force: true });
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-blue-700"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-full text-slate-700" aria-busy={loading} data-has-error={Boolean(error)}>
-      <div className="mx-auto max-w-[1600px]">
-        <header className="flex flex-wrap items-center gap-2">
-          <label className="relative min-w-[280px] flex-1">
-            <span className="sr-only">
-              Search promises to pay
-            </span>
+    <main className="min-h-full text-slate-700" data-has-error={Boolean(error)}>
+      <div className="mx-auto max-w-[1680px] min-w-0 space-y-3 pr-2 sm:pr-4">
+        <section className="flex flex-wrap items-center justify-between gap-3">
+          <div role="tablist" aria-label="PTP status" className="flex flex-wrap gap-2">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.label;
+              return (
+                <button
+                  key={tab.label}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => updateFilter(setActiveTab)(tab.label)}
+                  className={`inline-flex h-8 items-center gap-2 rounded-lg border px-3.5 text-[12px] font-semibold transition-colors ${
+                    active
+                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-blue-800 hover:border-blue-300"
+                  }`}
+                >
+                  {tab.label}
+                  <span className={active ? "rounded bg-white/20 px-1.5 text-[11px]" : "text-[11px] text-slate-700"}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-
-            <input
-              value={query}
-              onChange={(event) =>
-                setQuery(event.target.value)
-              }
-              placeholder="Search by customer name..."
-              className="h-[35px] w-full rounded-md border border-slate-200 bg-white pl-7 text-[12px] outline-none"
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setRefreshing(true);
+                load({ force: true });
+                setAnalyticsVersion((version) => version + 1);
+              }}
+              title="Refresh data"
+              className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-semibold text-blue-800 hover:border-blue-300"
+            >
+              {refreshing ? (
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+              ) : (
+                <CalendarDays className="h-4 w-4 text-blue-600" />
+              )}
+              {asOnLabel}
+            </button>
+            {monthOptions.length > 0 && (
+              <label className="relative inline-flex">
+                <span className="sr-only">PTP month</span>
+                <select
+                  value={selectedMonth}
+                  onChange={(event) => updateFilter(setMonth)(event.target.value)}
+                  className="h-8 min-w-[130px] appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-[12px] font-semibold text-blue-700 outline-none focus:border-blue-500"
+                >
+                  {monthOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {monthLabel(option)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+              </label>
+            )}
+            <FilterSelect
+              value={region}
+              onChange={updateFilter(setRegion)}
+              allLabel="All Regions"
+              options={regionOptions}
+              disabled={!regionOptions.length}
             />
-          </label>
+            <FilterSelect value={collector} onChange={updateFilter(setCollector)} allLabel="All Collectors" options={collectorOptions} />
+            <PeriodSelect value={period} onChange={setPeriod} />
+          </div>
+        </section>
 
-          <Select
-            label="Status"
-            value={status}
-            onChange={setStatus}
-            options={statusOptions}
-          />
+        <PtpKpiCards kpis={analytics.kpis} />
 
-          <Select
-            label="Owner"
-            value="All"
-            onChange={() => {}}
-            options={[]}
-          />
+        <section className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <h2 className="text-[14px] font-bold text-slate-800">
+            {activeTab === "All" ? "All Promises" : `${activeTab} Promises`}
+            <span className="ml-2 text-[12px] font-medium text-slate-500">{visibleRecords.length} records</span>
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white pl-3 pr-2 text-[12px] font-medium text-slate-600">
+              Promise Date
+              <input
+                type="date"
+                value={promiseDate}
+                onChange={(event) => updateFilter(setPromiseDate)(event.target.value)}
+                className="bg-transparent text-[12px] text-slate-700 outline-none"
+                aria-label="Filter by promise date"
+              />
+              {promiseDate && (
+                <button type="button" aria-label="Clear promise date" onClick={() => updateFilter(setPromiseDate)("")} className="text-slate-400 hover:text-slate-600">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </label>
+            <label className="relative inline-flex">
+              <span className="sr-only">Records per page</span>
+              <select
+                value={pageSize}
+                onChange={(event) => updateFilter(setPageSize)(Number(event.target.value))}
+                className="h-8 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-[12px] font-semibold text-slate-700 outline-none"
+              >
+                {PAGE_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size} per page
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+            </label>
+          </div>
+        </section>
 
-          <span className="rounded-md bg-white px-2 py-[6px] text-[12px] font-semibold text-slate-600">
-            {records.length} records
-          </span>
-        </header>
+        <PromiseToPayCard records={visibleRecords} page={safePage} pageSize={pageSize} onPageChange={setPage} />
 
-        <PromiseToPayCard
-          filters={resolvedPromiseData?.filters ?? []}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-          records={records}
-        />
+        <PtpCharts analytics={analytics} period={period} onPeriodChange={setPeriod} />
+        {/* Remount on filter change so the table's internal pagination resets to page 1. */}
+        <PromiseToPayTable key={`${activeTab}|${collector}|${region}|${promiseDate}`} records={visibleRecords} />
 
-        <PromiseToPayTable records={records} />
       </div>
     </main>
   );

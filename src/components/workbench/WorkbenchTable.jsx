@@ -1,533 +1,343 @@
 "use client";
-import { toast } from "sonner";
-import { useMemo, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import {
-  ChevronDown,
-  FilePenLine,
-  Filter,
-  Info,
-  Plus,
-  Search,
-} from "lucide-react";
-import { addNote, updateNote, deleteNote } from "@/app/lib/api";
-const riskStyles = {
-  High: "bg-orange-100 text-orange-600",
-  Medium: "bg-amber-100 text-amber-600",
-  Low: "bg-emerald-50 text-emerald-600",
-  Critical: "bg-rose-100 text-rose-500",
-};
-const ptpStyles = {
-  Broken: "bg-rose-100 text-rose-500",
-  Active: "bg-blue-100 text-blue-600",
-  "Due Soon": "bg-amber-100 text-amber-600",
-};
 
-function MiniSelect({ value, onChange, options, filter }) {
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowDownUp, ChevronDown, Copy, ExternalLink, FileText, Filter, MoreVertical, NotebookText, Phone, Search } from "lucide-react";
+import { toast } from "sonner";
+import Pagination from "@/components/common/Pagination";
+import { daysBetween, getAvatarColor, getInitials, parseISODate, startOfToday } from "@/utils/helpers";
+
+const RISK_STYLES = {
+  Critical: "bg-red-100 text-red-600",
+  High: "bg-orange-100 text-orange-600",
+  Medium: "bg-amber-100 text-amber-700",
+  Low: "bg-green-100 text-green-700",
+};
+const PTP_STYLES = {
+  Active: "bg-blue-100 text-blue-700",
+  Broken: "bg-red-100 text-red-600",
+  Partial: "bg-violet-100 text-violet-700",
+  Fulfilled: "bg-green-100 text-green-700",
+  None: "bg-slate-100 text-slate-600",
+};
+const RISK_ORDER = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+const BUCKET_ORDER = { "181+ days": 5, "91-180 days": 4, "61-90 days": 3, "31-60 days": 2, "1-30 days": 1 };
+
+const COLUMNS = [
+  { key: "rank", label: "#" },
+  { key: "customer", label: "CUSTOMER" },
+  { key: "overdueRaw", label: "OVERDUE AMOUNT" },
+  { key: "dpd", label: "DPD" },
+  { key: "bucketOrder", label: "AGING BUCKET" },
+  { key: "riskOrder", label: "RISK" },
+  { key: "ptp", label: "PTP STATUS" },
+  { key: "date", label: "PTP DATE" },
+  { key: "owner", label: "COLLECTOR" },
+  { key: "noteCount", label: "NOTES" },
+];
+
+function ptpDue(account, today) {
+  if (account.ptp === "Fulfilled") return null;
+  const days = daysBetween(today, parseISODate(account.date));
+  if (days === null) return null;
+  if (days > 0) return { text: `${days} day${days === 1 ? "" : "s"} left`, className: "text-green-600" };
+  if (days === 0) return { text: "Due today", className: "text-orange-500" };
+  return { text: `${-days} day${days === -1 ? "" : "s"} over`, className: "text-red-500" };
+}
+
+function FilterSelect({ value, onChange, allLabel, options, icon }) {
   return (
-    <label className="relative">
-      <span className="sr-only">Filter accounts</span>
-      {filter && (
-        <Filter className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
-      )}
+    <label className="relative inline-flex">
+      <span className="sr-only">{allLabel}</span>
+      {icon && <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />}
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`h-[26px] appearance-none rounded-md border border-slate-200 bg-white ${filter ? "pl-6" : "pl-2"} pr-6 text-[12px] text-slate-600 outline-none focus:border-blue-500`}
+        className={`h-10 min-w-[150px] appearance-none rounded-lg border border-slate-200 bg-white ${icon ? "pl-9" : "pl-3"} pr-9 text-[13px] font-medium text-slate-700 outline-none focus:border-blue-500`}
       >
-        <option>All</option>
+        <option value="All">{allLabel}</option>
         {options.map((option) => (
-          <option key={option}>{option}</option>
+          <option key={option} value={option}>
+            {option}
+          </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-400" />
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
     </label>
   );
 }
 
-function AccountRow({ account }) {
-  const [showNotes, setShowNotes] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [noteText, setNoteText] = useState(account.note || "");
-  const [newNote, setNewNote] = useState("");
-  const [selectedCollector, setSelectedCollector] = useState(
-    account.owner || "",
-  );
-  const router = useRouter();
+function RowMenu({ account, onClose, onOpen }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const handler = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
 
-  const handleAddNote = async () => {
-    const toastId = toast.loading("Adding note...");
-
+  const copy = async () => {
+    onClose();
     try {
-      const payload = {
-        customer_id: account.id,
-        note: newNote,
-      };
-
-      await addNote(payload);
-
-      toast.success("Note Added Successfully", {
-        id: toastId,
-      });
-
-      setShowAddModal(false);
-      setNewNote("");
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error?.response?.data?.message || "Failed to add note", {
-        id: toastId,
-      });
-
-      // Close popup on failure also
-      setShowAddModal(false);
-      setNewNote("");
-    }
-  };
-  const handleEditNote = async () => {
-    const toastId = toast.loading("Updating note...");
-
-    try {
-      const payload = {
-        note_id: account.id,
-        note: noteText,
-      };
-
-      await updateNote(account.id, payload);
-
-      setEditing(false);
-
-      toast.success("Note Updated Successfully", {
-        id: toastId,
-      });
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error?.response?.data?.message || "Failed to update note", {
-        id: toastId,
-      });
+      await navigator.clipboard.writeText(String(account.id));
+      toast.success(`Copied account #${account.id}`);
+    } catch {
+      toast.error("Unable to copy to clipboard");
     }
   };
 
-  const handleDeleteNote = async () => {
-    const toastId = toast.loading("Deleting note...");
-    try {
-      const payload = {
-        note_id: account.id,
-        note: noteText,
-      };
-
-      await deleteNote(account.id, payload);
-
-      toast.success("Note Deleted Successfully", {
-        id: toastId,
-      });
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error?.response?.data?.message || "Failed to delete note", {
-        id: toastId,
-      });
-    }
-  };
   return (
-    <>
-      <tr className="border-b border-slate-200 text-[12px] hover:bg-slate-50">
-        <td className="w-[68px] px-3 py-3">
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <input
-              aria-label={`Select ${account.customer}`}
-              type="checkbox"
-              className="h-3 w-3 shrink-0 accent-blue-600"
-            />
-            <span className="text-slate-500">#{account.rank}</span>
-          </div>
-        </td>
-
-        <td className="px-3 py-3">
-          <button
-            type="button"
-            onClick={() => {
-              router.push(`/account?id=${account.id}`);
-            }}
-            className="block font-bold text-[#2872e0] cursor-pointer"
-          >
-            {account.customer}
-          </button>
-          <small className="text-[12px] text-slate-400">{account.id}</small>
-        </td>
-
-        <td className="px-3 py-3">
-          <b className="block text-[#f04e55]">{account.overdue}</b>
-          <small className="text-[12px] text-slate-400">{account.share}</small>
-        </td>
-
-        <td className="px-3 py-3 font-bold text-[#f04e55]">{account.dpd}</td>
-
-        <td className="px-3 py-3">{account.bucket}</td>
-
-        <td className="px-3 py-3">
-          <span
-            className={`inline-flex min-w-[46px] justify-center rounded-md px-2 py-1 text-[12px] font-semibold ${
-              riskStyles[account.risk]
-            }`}
-          >
-            {account.risk}
-          </span>
-        </td>
-
-        <td className="px-3 py-3">
-          <span
-            className={`inline-flex min-w-[54px] justify-center rounded-md px-2 py-1 text-[12px] font-semibold ${
-              ptpStyles[account.ptp]
-            }`}
-          >
-            {account.ptp}
-          </span>
-        </td>
-
-        <td className="px-3 py-3">{account.date}</td>
-
-        {/* <td className="px-3 py-3 whitespace-nowrap">
-          <b
-            className="mr-1 inline-grid h-5 w-5 place-items-center rounded-full text-[7px] text-white"
-            style={{
-              backgroundColor: account.avatarColor || "#2865dc",
-            }}
-          >
-            {account.initials}
-          </b>
-
-          {account.owner}
-
-          <ChevronDown className="ml-1 inline h-3 w-3 text-blue-500" />
-        </td> */}
-        <td className="px-3 py-3 whitespace-nowrap">
-          <div className="flex items-center gap-2">
-            <b
-              className="inline-grid h-5 w-5 place-items-center rounded-full text-[7px] text-white"
-              style={{
-                backgroundColor: account.avatarColor || "#2865dc",
-              }}
-            >
-              {selectedCollector
-                ?.split(" ")
-                ?.map((n) => n[0])
-                ?.join("")
-                ?.toUpperCase()
-                ?.slice(0, 2)}
-            </b>
-
-            <select
-              value={selectedCollector}
-              onChange={(e) => setSelectedCollector(e.target.value)}
-              className="border-0 bg-transparent text-[12px] font-medium text-slate-700 outline-none"
-            >
-              {(account.collectors || []).map((collector) => (
-                <option key={collector} value={collector}>
-                  {collector}
-                </option>
-              ))}
-            </select>
-          </div>
-        </td>
-
-        <td className="px-3 py-3 whitespace-nowrap">
-          <button
-            type="button"
-            onClick={() => setShowNotes((prev) => !prev)}
-            className="block text-[12px] font-semibold text-blue-600"
-          >
-            <FilePenLine className="mr-1 inline h-3 w-3" />
-            {showNotes ? "Hide Notes" : "View Notes"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="mt-1 text-[12px] font-semibold text-blue-600"
-          >
-            <Plus className="mr-1 inline h-3 w-3" />
-            Add Note
-          </button>
-        </td>
-      </tr>
-
-      {showNotes && account.note && (
-        <tr className="border-b border-slate-200 bg-slate-50">
-          <td colSpan={10} className="px-9 py-2">
-            {editing ? (
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                className="w-full rounded border border-slate-300 p-2 text-[12px]"
-              />
-            ) : (
-              <p className="text-[12px] text-slate-600">
-                <Info className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
-                {noteText}
-              </p>
-            )}
-
-            <div className="mt-1 flex items-center justify-between">
-              <p className="space-x-3 text-[12px] text-slate-400">
-                <span>Last contact: {account.lastContact}</span>
-                <span>Broken PTPs: 3</span>
-                <span>Fulfilled PTPs: 1</span>
-              </p>
-
-              <span className="space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (editing) {
-                      handleEditNote();
-                    } else {
-                      setEditing(true);
-                    }
-                  }}
-                  className="rounded bg-white px-2 py-1 text-[12px] text-blue-600"
-                >
-                  {editing ? "Save Note" : "Edit Note"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDeleteNote}
-                  className="rounded bg-white px-2 py-1 text-[12px] text-rose-500"
-                >
-                  Delete Note
-                </button>
-              </span>
-            </div>
-          </td>
-        </tr>
-      )}
-
-      {showAddModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => {
-            setShowAddModal(false);
-            setNewNote("");
-          }}
-        >
-          <div
-            className="w-[500px] rounded-lg bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="mb-4 text-lg font-semibold">Add Note</h2>
-
-            <textarea
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Enter note..."
-              rows={5}
-              className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:border-blue-500"
-            />
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setNewNote("");
-                }}
-                className="rounded border border-slate-300 px-4 py-2 text-sm"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleAddNote}
-                disabled={!newNote.trim()}
-                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <div ref={ref} className="absolute right-0 top-9 z-20 w-44 rounded-lg border border-slate-200 bg-white py-1 text-[12px] shadow-lg">
+      <button type="button" onClick={() => onOpen("")} className="flex w-full items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50">
+        <ExternalLink className="h-3.5 w-3.5" /> Open Account 360
+      </button>
+      <button type="button" onClick={copy} className="flex w-full items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50">
+        <Copy className="h-3.5 w-3.5" /> Copy account #
+      </button>
+    </div>
   );
 }
-export default function WorkbenchTable({ accounts: accountData = [] }) {
+
+export default function WorkbenchTable({ accounts: source = [] }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
+  const [bucket, setBucket] = useState("All");
   const [risk, setRisk] = useState("All");
   const [ptp, setPtp] = useState("All");
-  const [bucket, setBucket] = useState("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  const accounts = useMemo(
-    () =>
-      accountData.filter(
-        (account) =>
-          `${account.customer} ${account.id}`
-            .toLowerCase()
-            .includes(query.toLowerCase()) &&
-          (risk === "All" || account.risk === risk) &&
-          (ptp === "All" || account.ptp === ptp) &&
-          (bucket === "All" || account.bucket === bucket),
-      ),
-    [accountData, bucket, ptp, query, risk],
-  );
-  const totalPages = Math.ceil(accounts.length / itemsPerPage);
+  const [sort, setSort] = useState({ key: "rank", direction: "asc" });
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState(() => new Set());
+  const [owners, setOwners] = useState({});
+  const [menuFor, setMenuFor] = useState(null);
+  const today = useMemo(() => startOfToday(), []);
 
-  const paginatedAccounts = accounts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const accounts = useMemo(() => {
+    const totalOverdue = source.reduce((sum, account) => sum + Math.max(account.overdueRaw, 0), 0);
+    return source.map((account) => ({
+      ...account,
+      owner: owners[account.id] ?? account.owner,
+      shareOfAr: totalOverdue ? `${((account.overdueRaw / totalOverdue) * 100).toFixed(1)}% of AR` : account.share,
+    }));
+  }, [source, owners]);
+
+  const options = useMemo(() => {
+    const unique = (key, order) =>
+      [...new Set(accounts.map((account) => account[key]).filter(Boolean))].sort((a, b) => (order ? (order[b] ?? 0) - (order[a] ?? 0) : a.localeCompare(b)));
+    return { bucket: unique("bucket", BUCKET_ORDER), risk: unique("risk", RISK_ORDER), ptp: unique("ptp") };
+  }, [accounts]);
+
+  const rows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const direction = sort.direction === "asc" ? 1 : -1;
+    return accounts
+      .filter(
+        (account) =>
+          (!needle || `${account.customer} ${account.id} ${account.owner}`.toLowerCase().includes(needle)) &&
+          (bucket === "All" || account.bucket === bucket) &&
+          (risk === "All" || account.risk === risk) &&
+          (ptp === "All" || account.ptp === ptp),
+      )
+      .sort((a, b) => {
+        const left = a[sort.key];
+        const right = b[sort.key];
+        if (typeof left === "number" && typeof right === "number") return (left - right) * direction;
+        return String(left ?? "").localeCompare(String(right ?? "")) * direction;
+      });
+  }, [accounts, query, bucket, risk, ptp, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const visible = rows.slice(start, start + pageSize);
+  const allVisibleSelected = visible.length > 0 && visible.every((account) => selected.has(account.id));
+
+  const withReset = (setter) => (value) => {
+    setter(value);
+    setPage(1);
+  };
+
+  const toggleSort = (key) =>
+    setSort((current) => ({ key, direction: current.key === key && current.direction === "asc" ? "desc" : "asc" }));
+
+  const toggleRow = (id) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelected((current) => {
+      const next = new Set(current);
+      visible.forEach((account) => (allVisibleSelected ? next.delete(account.id) : next.add(account.id)));
+      return next;
+    });
+
+  const openAccount = (id, tab = "") => router.push(`/account?id=${encodeURIComponent(id)}${tab ? `&tab=${tab}` : ""}`);
+
+  const reassign = (account, owner) => {
+    setOwners((current) => ({ ...current, [account.id]: owner }));
+    toast.info(`${account.customer} reassigned to ${owner} for this session (not saved to the server).`);
+  };
+
   return (
     <>
-      <section className="mt-[18px] flex flex-wrap items-center gap-2">
-        <label className="relative min-w-[280px] flex-1">
+      <section className="mt-4 flex flex-wrap items-center gap-3">
+        <label className="relative w-full min-w-0 flex-1 sm:min-w-[280px]">
           <span className="sr-only">Search accounts</span>
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by customer or account #..."
-            className="h-[26px] w-full rounded-md border border-slate-200 bg-white pl-7 text-[12px] outline-none"
+            onChange={(event) => withReset(setQuery)(event.target.value)}
+            placeholder="Search by customer, account #, or collector..."
+            className="h-10 w-full rounded-full border border-slate-200 bg-white pl-11 pr-4 text-[13px] outline-none focus:border-blue-500"
           />
         </label>
-        <MiniSelect
-          value={risk}
-          onChange={setRisk}
-          options={["High", "Medium", "Low"]}
-          filter
-        />
-        <MiniSelect
-          value={ptp}
-          onChange={setPtp}
-          options={["Active", "Broken", "Due Soon"]}
-        />
-        <MiniSelect
-          value={bucket}
-          onChange={setBucket}
-          options={["181+ days", "91-180 days", "61-90 days"]}
-        />
-        <span className="text-[12px] text-slate-500">
-          {accounts.length} accounts
-        </span>
+        <FilterSelect value={bucket} onChange={withReset(setBucket)} allLabel="All Customers" options={options.bucket} icon />
+        <FilterSelect value={risk} onChange={withReset(setRisk)} allLabel="All Risk" options={options.risk} />
+        <FilterSelect value={ptp} onChange={withReset(setPtp)} allLabel="All PTP Status" options={options.ptp} />
+        <span className="text-[13px] text-slate-600">{rows.length} accounts</span>
       </section>
-      <section className="mt-[18px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-sm">
+
+      <section className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_6px_rgba(38,82,144,.08)]">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[990px] border-collapse text-left">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr className="text-[12px] font-bold text-slate-500">
-                <th className="w-[68px] px-3 py-2">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <input
-                      aria-label="Select all"
-                      type="checkbox"
-                      className="h-3 w-3 shrink-0 accent-blue-600"
-                    />
-                    <span># ↑</span>
-                  </div>
+          <table className="w-full min-w-[1180px] text-left">
+            <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600">
+              <tr>
+                <th className="w-10 px-4 py-3">
+                  <input type="checkbox" aria-label="Select all accounts on this page" checked={allVisibleSelected} onChange={toggleAll} className="h-4 w-4 accent-blue-600" />
                 </th>
-                {[
-                  "CUSTOMER",
-                  "OVERDUE AMOUNT",
-                  "DPD",
-                  "AGING BUCKET",
-                  "RISK",
-                  "PTP STATUS",
-                  "PTP DATE",
-                  "COLLECTOR",
-                  "NOTES",
-                ].map((heading) => (
-                  <th key={heading} className="px-3 py-2">
-                    {heading}
+                {COLUMNS.map((column) => (
+                  <th key={column.key} className="whitespace-nowrap px-3 py-3">
+                    <button type="button" onClick={() => toggleSort(column.key)} className="inline-flex items-center gap-1 hover:text-slate-800">
+                      {column.label}
+                      <ArrowDownUp className={`h-3 w-3 ${sort.key === column.key ? "text-blue-600" : "text-slate-400"}`} />
+                    </button>
                   </th>
                 ))}
+                <th className="px-3 py-3">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedAccounts.map((account) => (
-                <AccountRow key={account.id} account={account} />
-              ))}
+              {visible.map((account) => {
+                const due = ptpDue(account, today);
+                const collectors = account.collectors?.length ? account.collectors : [account.owner];
+                return (
+                  <tr key={account.id} className="border-b border-slate-100 text-[13px] hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <input type="checkbox" aria-label={`Select ${account.customer}`} checked={selected.has(account.id)} onChange={() => toggleRow(account.id)} className="h-4 w-4 accent-blue-600" />
+                    </td>
+                    <td className="px-3 py-3 text-slate-700">#{account.rank}</td>
+                    <td className="px-3 py-3">
+                      <button type="button" onClick={() => openAccount(account.id)} className="block text-left font-semibold text-blue-600 hover:underline">
+                        {account.customer}
+                      </button>
+                      <span className="text-[12px] text-slate-500">{account.id}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <b className="block text-red-500">{account.overdue}</b>
+                      <span className="text-[12px] text-slate-500">{account.shareOfAr}</span>
+                    </td>
+                    <td className="px-3 py-3 font-semibold text-red-500">{account.dpd}</td>
+                    <td className="px-3 py-3 text-slate-700">{account.bucket}</td>
+                    <td className="px-3 py-3">
+                      <span className={`inline-flex min-w-[60px] justify-center rounded-md px-2 py-1 text-[12px] font-semibold ${RISK_STYLES[account.risk] ?? "bg-slate-100 text-slate-600"}`}>
+                        {account.risk}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className={`inline-flex min-w-[64px] justify-center rounded-md px-2 py-1 text-[12px] font-semibold ${PTP_STYLES[account.ptp] ?? PTP_STYLES.None}`}>
+                        {account.ptp}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <span className="block text-slate-700">{account.date || "-"}</span>
+                      {due && <span className={`text-[12px] font-semibold ${due.className}`}>{due.text}</span>}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: getAvatarColor(account.owner) }}>
+                          {getInitials(account.owner)}
+                        </span>
+                        <label className="relative inline-flex items-center">
+                          <span className="sr-only">Assigned collector for {account.customer}</span>
+                          <select
+                            value={account.owner}
+                            onChange={(event) => reassign(account, event.target.value)}
+                            className="appearance-none bg-transparent pr-6 text-[13px] font-medium text-slate-800 outline-none"
+                          >
+                            {[...new Set([account.owner, ...collectors])].map((name) => (
+                              <option key={name} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-slate-500" />
+                        </label>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button
+                        type="button"
+                        onClick={() => openAccount(account.id, "notes")}
+                        title={account.note || "No notes"}
+                        className="inline-flex items-center gap-1.5 text-slate-700 hover:text-blue-600"
+                      >
+                        <NotebookText className="h-4 w-4" /> {account.noteCount}
+                      </button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="relative flex items-center gap-1.5">
+                        <button type="button" title="View transactions" aria-label={`View transactions for ${account.customer}`} onClick={() => openAccount(account.id, "transactions")} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50">
+                          <FileText className="h-4 w-4" />
+                        </button>
+                        <button type="button" title="Communications" aria-label={`Communications for ${account.customer}`} onClick={() => openAccount(account.id, "communications")} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50">
+                          <Phone className="h-4 w-4" />
+                        </button>
+                        <button type="button" title="More actions" aria-label={`More actions for ${account.customer}`} onClick={() => setMenuFor((current) => (current === account.id ? null : account.id))} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        {menuFor === account.id && <RowMenu account={account} onClose={() => setMenuFor(null)} onOpen={(tab) => openAccount(account.id, tab)} />}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!rows.length && (
+                <tr>
+                  <td colSpan={COLUMNS.length + 2} className="py-10 text-center text-[13px] text-slate-500">
+                    No accounts match the selected filters.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-          <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
-            {/* Left Side */}
-            <div className="text-[13px] text-slate-500">
-              Showing{" "}
-              {accounts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
-              -{Math.min(currentPage * itemsPerPage, accounts.length)} of{" "}
-              {accounts.length} accounts
-            </div>
+        </div>
 
-            {/* Right Side */}
-            <div className="flex items-center gap-3">
-              <span className="text-[13px] text-slate-500">Rows per page</span>
-
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-[13px] text-slate-600">
+          <span>
+            Showing {rows.length ? start + 1 : 0}-{Math.min(start + pageSize, rows.length)} of {rows.length} accounts
+            {selected.size > 0 && <span className="ml-2 font-semibold text-blue-600">({selected.size} selected)</span>}
+          </span>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2">
+              Rows per page
               <select
-                value={itemsPerPage}
-                className="h-8 rounded-md border border-slate-200 px-2 text-[13px]"
-                disabled
+                value={pageSize}
+                onChange={(event) => withReset(setPageSize)(Number(event.target.value))}
+                className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-[13px] text-slate-700"
               >
-                <option>10</option>
+                {[10, 25, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
               </select>
-
-              {/* Previous */}
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                ‹
-              </button>
-
-              {/* Page Numbers */}
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                  const page = i + 1;
-
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`h-8 w-8 rounded-md text-sm font-medium ${
-                        currentPage === page
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-
-                {totalPages > 5 && (
-                  <>
-                    <span className="px-1 text-slate-400">...</span>
-
-                    <button
-                      onClick={() => setCurrentPage(totalPages)}
-                      className={`h-8 w-8 rounded-md text-sm font-medium ${
-                        currentPage === totalPages
-                          ? "bg-blue-600 text-white"
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Next */}
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                ›
-              </button>
-            </div>
+            </label>
+            <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </div>
       </section>

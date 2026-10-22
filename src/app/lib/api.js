@@ -3,17 +3,21 @@ import axios from "axios";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const debugApiRequests = process.env.NEXT_PUBLIC_DATABRICKS_DEBUG === "true";
 
-function getRequestUrl(config) {
-  if (typeof window === "undefined") {
-    return config.url;
-  }
+function getRequestUrl(config = {}) {
+  try {
+    if (typeof window === "undefined") {
+      return config.url;
+    }
 
-  const configuredBaseUrl = config.baseURL ?? "";
-  const baseUrl = new URL(
-    configuredBaseUrl.endsWith("/") ? configuredBaseUrl : `${configuredBaseUrl}/`,
-    window.location.origin
-  );
-  return new URL(config.url ?? "", baseUrl).toString();
+    const configuredBaseUrl = config.baseURL ?? "";
+    const baseUrl = new URL(
+      configuredBaseUrl.endsWith("/") ? configuredBaseUrl : `${configuredBaseUrl}/`,
+      window.location.origin
+    );
+    return new URL(config.url ?? "", baseUrl).toString();
+  } catch {
+    return config.url ?? "unknown";
+  }
 }
 
 const axiosInstance = axios.create({
@@ -33,9 +37,9 @@ export const REGISTER_URL = `${API_BASE_URL}/auth/register`;
 export const AGENT_STATUS_URL = `${API_BASE_URL}/agent-status`;
 export const NOTIFICATION_URL = `${API_BASE_URL}/notification`;
 
-let dashboardRequest;
+const dashboardRequests = new Map();
 let workbenchRequest;
-let promiseToPayRequest;
+const promiseToPayRequests = new Map();
 let accountRequest;
 let agentStatusRequest;
 let notificationsRequest;
@@ -170,21 +174,48 @@ name,
 return response.data;
 }
 
-export async function getDashboard() {
-  if (!dashboardRequest) {
-    dashboardRequest = axiosInstance
-      .get("ui/dashboard")
-      .then((response) => response.data)
-      .catch((error) => {
-        dashboardRequest = undefined;
-        throw error;
-      });
-  }
+function buildQueryString(params = {}) {
+  const searchParams = new URLSearchParams();
 
-  return dashboardRequest;
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+
+    searchParams.set(key, String(value));
+  });
+
+  return searchParams.toString();
 }
 
-export async function getWorkbench() {
+export async function getDashboard(params = {}, options = {}) {
+  const queryString = buildQueryString(params);
+  const cacheKey = queryString || "__default__";
+
+  if (options.force) {
+    dashboardRequests.delete(cacheKey);
+  }
+
+  if (!dashboardRequests.has(cacheKey)) {
+    const request = axiosInstance
+      .get(queryString ? `ui/dashboard?${queryString}` : "ui/dashboard")
+      .then((response) => response.data)
+      .catch((error) => {
+        dashboardRequests.delete(cacheKey);
+        throw error;
+      });
+
+    dashboardRequests.set(cacheKey, request);
+  }
+
+  return dashboardRequests.get(cacheKey);
+}
+
+export async function getWorkbench({ force = false } = {}) {
+  if (force) {
+    workbenchRequest = undefined;
+  }
+
   if (!workbenchRequest) {
     workbenchRequest = axiosInstance
       .get("ui/workbench")
@@ -198,18 +229,46 @@ export async function getWorkbench() {
   return workbenchRequest;
 }
 
-export async function getPromiseToPay() {
-  if (!promiseToPayRequest) {
-    promiseToPayRequest = axiosInstance
-      .get("ui/promise-to-pay?status=all&limit=500")
-      .then((response) => response.data)
-      .catch((error) => {
-        promiseToPayRequest = undefined;
-        throw error;
-      });
+// GET /ui/promise-to-pay — month: YYYY-MM | "all" (omit = latest completed month),
+// status: all|active|partial|broken|fulfilled, search: customer name, limit: 1-1000.
+export async function getPromiseToPay({ limit = 1000, month, status = "all", search, force = false } = {}) {
+  const query = { status, limit };
+  if (month) query.month = month;
+  if (search) query.search = search;
+  const cacheKey = JSON.stringify(query);
+
+  if (force) {
+    promiseToPayRequests.delete(cacheKey);
   }
 
-  return promiseToPayRequest;
+  if (!promiseToPayRequests.has(cacheKey)) {
+    const request = axiosInstance
+      .get(`ui/promise-to-pay?${buildQueryString(query)}`)
+      .then((response) => response.data)
+      .catch((error) => {
+        promiseToPayRequests.delete(cacheKey);
+        throw error;
+      });
+
+    promiseToPayRequests.set(cacheKey, request);
+  }
+
+  return promiseToPayRequests.get(cacheKey);
+}
+
+// GET /ui/ptp-analytics — KPI cards, PTP trend, status distribution, aging,
+// fulfillment-rate trend and top collectors for the Promise to Pay page.
+export async function getPtpAnalytics({ months = 6, collector = "all", month, top = 5 } = {}) {
+  const params = { months, collector_name: collector || "all", top };
+  if (month && month !== "all") params.month = month;
+  const response = await axiosInstance.get("ui/ptp-analytics", { params });
+  return response.data;
+}
+
+// GET /ui/collectors — collector names for the owner filter.
+export async function getCollectors() {
+  const response = await axiosInstance.get("ui/collectors");
+  return response.data;
 }
 
 // export async function getAccount() {
@@ -226,10 +285,13 @@ export async function getPromiseToPay() {
 //   return accountRequest;
 // }
 
-export async function getAccount(customerId = "32342") {
-  const response = await axiosInstance.get(
-    `ui/account360/${customerId}`
-  );
+// Account 360. The backend paginates transactions (page/page_size, max 100) and
+// PTP history (ptp_page/ptp_page_size, max 100); request the largest pages so the
+// tabs can search, filter and paginate on the client.
+export async function getAccount(customerId = "32342", params = {}) {
+  const response = await axiosInstance.get(`ui/account360/${encodeURIComponent(customerId)}`, {
+    params: { page: 1, page_size: 100, ptp_page: 1, ptp_page_size: 100, ...params },
+  });
 
   return response.data;
 }

@@ -54,11 +54,7 @@ export default function PromiseToPayTable({ records = [] }) {
                   <button
                     type="button"
                     onClick={() =>
-                      router.push(
-                        `/account?customerId=${record.invoice}&customerName=${encodeURIComponent(
-                          record.customer,
-                        )}`,
-                      )
+                      router.push(`/account?id=${encodeURIComponent(record.id)}`)
                     }
                     className="font-bold text-[#2671e3] hover:underline"
                   >
