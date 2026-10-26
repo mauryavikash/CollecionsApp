@@ -52,8 +52,8 @@ export default function DashboardLayout({ children }) {
                     />
 
                     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-                        <main className="relative m-2 mr-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-l-xl border border-white/10 sm:m-4 sm:mr-0">
-                            <div className="relative z-10 min-w-0">
+                        <main className="relative m-2 mr-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-l-xl border border-white/10 bg-transparent sm:m-4 sm:mr-0">
+                            <div className="relative z-10 min-w-0 px-3 py-3 sm:px-5 sm:py-4">
                                 {children}
                             </div>
                         </main>

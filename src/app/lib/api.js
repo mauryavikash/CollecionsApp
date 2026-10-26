@@ -296,6 +296,12 @@ export async function getAccount(customerId = "32342", params = {}) {
   return response.data;
 }
 
+// List notes for a customer
+export async function getNotes(customerId) {
+  const response = await axiosInstance.get(`ui/notes/${encodeURIComponent(customerId)}`);
+  return response.data;
+}
+
 // Add Note
 export async function addNote(payload) {
   const response = await axiosInstance.post("ui/notes", payload);

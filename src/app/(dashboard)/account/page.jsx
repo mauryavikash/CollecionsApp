@@ -3,12 +3,12 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { RefreshCw, ChevronLeft } from "lucide-react";
 
 import Account360Detail from "@/components/account/Account360Detail";
 import Overview from "@/components/account/Overview";
-import Transactions, { exportTransactions } from "@/components/account/Transactions";
+import Transactions from "@/components/account/Transactions";
+import Notes from "@/components/account/Notes";
 import PTPhistory from "@/components/account/PTPhistory";
 import { buildAging, getMetric, normalizeTransactions } from "@/components/account/accountData";
 import { LoadingState } from "@/components/common/LoadingState";
@@ -16,15 +16,8 @@ import { getAccount } from "@/app/lib/api";
 import { parseCurrency } from "@/utils/helpers";
 import { getIndustry } from "@/utils/industry";
 
-const TABS = ["Overview", "Transactions", "PTP History", "Communications", "Notes", "Documents", "Risk & Insights"];
-const TAB_ALIASES = { transactions: "Transactions", ptp: "PTP History", notes: "Notes", communications: "Communications" };
-
-const PLACEHOLDERS = {
-  Communications: "Communication history and outreach records will appear here.",
-  Notes: "Account notes and collector comments will appear here.",
-  Documents: "Attached documents, invoices, and correspondence will appear here.",
-  "Risk & Insights": "AI-powered risk analysis and collection insights will appear here.",
-};
+const TABS = ["Overview", "Transactions", "PTP History", "Notes"];
+const TAB_ALIASES = { transactions: "Transactions", ptp: "PTP History", notes: "Notes" };
 
 function formatUpdated(date) {
   if (!date) return "";
@@ -83,21 +76,6 @@ function Account360Content() {
   const breadcrumb = Array.isArray(data?.breadcrumb) && data.breadcrumb.length === 3 ? data.breadcrumb : ["Collector Workbench", account.name, "Account 360"];
   const lastUpdated = data?.lastUpdated ?? formatUpdated(updatedAt);
 
-  const handleAction = async (action) => {
-    if (action === "transactions") setTab("Transactions");
-    if (action === "ptp") setTab("PTP History");
-    if (action === "notes") setTab("Notes");
-    if (action === "export") exportTransactions(transactions, `account-${account.id}-transactions`, "xlsx");
-    if (action === "copy") {
-      try {
-        await navigator.clipboard.writeText(String(account.id));
-        toast.success(`Copied account #${account.id}`);
-      } catch {
-        toast.error("Unable to copy to clipboard");
-      }
-    }
-  };
-
   if (loading) {
     return <LoadingState label="Loading account data..." />;
   }
@@ -151,7 +129,7 @@ function Account360Content() {
           transactions={transactions}
           ptpHistory={ptpHistory}
           ptpTotal={ptpTotal}
-          onAction={handleAction}
+          asOfDate={data?.asOfDate}
         />
 
         <div role="tablist" aria-label="Account sections" className="mt-4 flex flex-wrap gap-2">
@@ -185,7 +163,6 @@ function Account360Content() {
             ptpHistory={ptpHistory}
             asOfDate={data?.asOfDate}
             onViewActivity={() => setTab("PTP History")}
-            onViewRisk={() => setTab("Risk & Insights")}
           />
         )}
 
@@ -193,12 +170,7 @@ function Account360Content() {
 
         {tab === "PTP History" && <PTPhistory history={ptpHistory} meta={ptpMeta} />}
 
-        {PLACEHOLDERS[tab] && (
-          <section className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-[14px] font-bold text-slate-800">{tab}</h2>
-            <p className="text-[12px] text-slate-500">{PLACEHOLDERS[tab]}</p>
-          </section>
-        )}
+        {tab === "Notes" && <Notes key={`notes-${account.id}`} customerId={account.id ?? customerId} customerName={account.name} />}
       </div>
     </main>
   );

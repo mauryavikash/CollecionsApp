@@ -150,8 +150,9 @@ export function buildPtpAnalytics(records, period, today = startOfToday()) {
       label: "Total PTP",
       value: total.toLocaleString("en-US"),
       change: lastTwoChange(series.total),
-      comparison: "vs last month",
+      comparison: "vs. previous month",
       spark: series.total,
+      sparkLabels: months.map((month) => month.fullLabel),
     },
     {
       id: "fulfilled",
@@ -160,6 +161,7 @@ export function buildPtpAnalytics(records, period, today = startOfToday()) {
       change: lastTwoChange(series.fulfilled),
       comparison: shareOf(fulfilled),
       spark: series.fulfilled,
+      sparkLabels: months.map((month) => month.fullLabel),
     },
     {
       id: "dueSoon",
@@ -168,6 +170,7 @@ export function buildPtpAnalytics(records, period, today = startOfToday()) {
       change: null,
       comparison: shareOf(dueSoon),
       spark: series.active,
+      sparkLabels: months.map((month) => month.fullLabel),
     },
     {
       id: "partial",
@@ -176,6 +179,7 @@ export function buildPtpAnalytics(records, period, today = startOfToday()) {
       change: lastTwoChange(series.partial),
       comparison: shareOf(partial),
       spark: series.partial,
+      sparkLabels: months.map((month) => month.fullLabel),
     },
     {
       id: "broken",
@@ -184,6 +188,7 @@ export function buildPtpAnalytics(records, period, today = startOfToday()) {
       change: lastTwoChange(series.broken),
       comparison: shareOf(broken),
       spark: series.broken,
+      sparkLabels: months.map((month) => month.fullLabel),
       higherIsWorse: true,
     },
     {
@@ -191,8 +196,9 @@ export function buildPtpAnalytics(records, period, today = startOfToday()) {
       label: "Total PTP Amount",
       value: formatCompactCurrency(totalAmount),
       change: lastTwoChange(series.amount),
-      comparison: "vs last month",
+      comparison: "vs. previous month",
       spark: series.amount,
+      sparkLabels: months.map((month) => month.fullLabel),
     },
   ];
 
@@ -291,20 +297,54 @@ function comparisonText(kpi) {
   return stripped || "vs last month";
 }
 
+function monthsBack(periodMonth, count) {
+  const start = parseISODate(`${periodMonth}-01`);
+  if (!start) return null;
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth() - (count - 1 - index), 1);
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  });
+}
+
 export function mapBackendPtpAnalytics(response = {}) {
-  const kpis = (response.kpis ?? []).map((kpi) => ({
-    id: BACKEND_KPI_IDS[kpi.id] ?? kpi.id,
-    label: kpi.label,
-    value: kpi.value,
-    change: finiteOrNull(kpi.changePct),
-    sentiment: kpi.sentiment,
-    comparison: comparisonText(kpi),
-    pctOfTotal: kpi.pctOfTotal,
-    definition: kpi.definition,
-    spark: (kpi.sparkline ?? []).map(Number),
-    sparkLabels: kpi.sparklineLabels ?? [],
-    higherIsWorse: kpi.id === "broken",
-  }));
+  const periodMonth = response.period?.month;
+  const previousMonthLabel = periodMonth ? monthsBack(periodMonth, 2)?.[0] : null;
+
+  const kpis = (response.kpis ?? []).map((kpi) => {
+    const higherIsWorse = kpi.id === "broken";
+    const prevChange = finiteOrNull(kpi.changeVsPrevMonthPct);
+    const hasPrev = prevChange !== null;
+    const spark = (kpi.sparkline ?? []).map(Number);
+    const previousValue = finiteOrNull(kpi.previousMonthValue);
+    let previousText = null;
+    if (previousValue !== null) {
+      const formatted = kpi.id === "total-amount"
+        ? formatCompactCurrency(previousValue)
+        : previousValue.toLocaleString("en-US");
+      previousText = `${formatted} in ${previousMonthLabel ?? "previous month"}`;
+    }
+
+    return {
+      id: BACKEND_KPI_IDS[kpi.id] ?? kpi.id,
+      label: kpi.label,
+      value: kpi.value,
+      change: hasPrev ? prevChange : null,
+      sentiment: hasPrev
+        ? prevChange === 0
+          ? "neutral"
+          : (higherIsWorse ? prevChange < 0 : prevChange > 0)
+            ? "positive"
+            : "negative"
+        : kpi.sentiment,
+      comparison: hasPrev ? "vs. previous month" : comparisonText(kpi),
+      previousText,
+      pctOfTotal: kpi.pctOfTotal,
+      definition: kpi.definition,
+      spark,
+      sparkLabels: (periodMonth && monthsBack(periodMonth, spark.length)) || kpi.sparklineLabels || [],
+      higherIsWorse,
+    };
+  });
 
   const fullLabel = (point) => {
     const date = parseISODate(`${point.month}-01`);

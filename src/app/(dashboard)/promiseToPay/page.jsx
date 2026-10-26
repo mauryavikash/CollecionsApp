@@ -7,6 +7,7 @@ import PtpCharts, { PeriodSelect } from "@/components/promiseToPay/PtpCharts";
 import PromiseToPayCard from "@/components/promiseToPay/PromiseToPayCard";
 import PromiseToPayTable from "@/components/promiseToPay/PromiseToPayTable";
 import { LoadingState } from "@/components/common/LoadingState";
+import WelcomeBanner from "@/components/common/WelcomeBanner";
 import { getPromiseToPay, getPtpAnalytics } from "@/app/lib/api";
 import {
   PTP_TABS,
@@ -195,34 +196,10 @@ export default function PromiseToPayPage() {
   return (
     <main className="min-h-full text-slate-700" data-has-error={Boolean(error)}>
       <div className="mx-auto max-w-[1680px] min-w-0 space-y-3 pr-2 sm:pr-4">
-        <section className="flex flex-wrap items-center justify-between gap-3">
-          <div role="tablist" aria-label="PTP status" className="flex flex-wrap gap-2">
-            {tabs.map((tab) => {
-              const active = activeTab === tab.label;
-              return (
-                <button
-                  key={tab.label}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => updateFilter(setActiveTab)(tab.label)}
-                  className={`inline-flex h-8 items-center gap-2 rounded-lg border px-3.5 text-[12px] font-semibold transition-colors ${
-                    active
-                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                      : "border-slate-200 bg-white text-blue-800 hover:border-blue-300"
-                  }`}
-                >
-                  {tab.label}
-                  <span className={active ? "rounded bg-white/20 px-1.5 text-[11px]" : "text-[11px] text-slate-700"}>
-                    {tab.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
+       
+       <section className="flex flex-wrap items-end justify-end gap-3">
+ <div className="flex flex-wrap items-center gap-2">
+            {/* <button
               type="button"
               onClick={() => {
                 setRefreshing(true);
@@ -264,18 +241,44 @@ export default function PromiseToPayPage() {
               disabled={!regionOptions.length}
             />
             <FilterSelect value={collector} onChange={updateFilter(setCollector)} allLabel="All Collectors" options={collectorOptions} />
+            */}
             <PeriodSelect value={period} onChange={setPeriod} />
-          </div>
-        </section>
+          </div></section>
 
         <PtpKpiCards kpis={analytics.kpis} />
+  <PtpCharts analytics={analytics} period={period} onPeriodChange={setPeriod} />
 
+        {/* All Promises header: title, status tabs, promise date and page size in one row. */}
         <section className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <h2 className="text-[14px] font-bold text-slate-800">
+          <h2 className="shrink-0 text-[14px] font-bold text-slate-800">
             {activeTab === "All" ? "All Promises" : `${activeTab} Promises`}
             <span className="ml-2 text-[12px] font-medium text-slate-500">{visibleRecords.length} records</span>
           </h2>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div role="tablist" aria-label="PTP status" className="flex flex-wrap gap-2">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.label;
+              return (
+                <button
+                  key={tab.label}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => updateFilter(setActiveTab)(tab.label)}
+                  className={`inline-flex h-8 items-center gap-2 rounded-lg border px-3.5 text-[12px] font-semibold transition-colors ${
+                    active
+                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-blue-800 hover:border-blue-300"
+                  }`}
+                >
+                  {tab.label}
+                  <span className={active ? "rounded bg-white/20 px-1.5 text-[11px]" : "text-[11px] text-slate-700"}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
             <label className="relative inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white pl-3 pr-2 text-[12px] font-medium text-slate-600">
               Promise Date
               <input
@@ -311,9 +314,9 @@ export default function PromiseToPayPage() {
 
         <PromiseToPayCard records={visibleRecords} page={safePage} pageSize={pageSize} onPageChange={setPage} />
 
-        <PtpCharts analytics={analytics} period={period} onPeriodChange={setPeriod} />
-        {/* Remount on filter change so the table's internal pagination resets to page 1. */}
         <PromiseToPayTable key={`${activeTab}|${collector}|${region}|${promiseDate}`} records={visibleRecords} />
+      
+        {/* Remount on filter change so the table's internal pagination resets to page 1. */}
 
       </div>
     </main>

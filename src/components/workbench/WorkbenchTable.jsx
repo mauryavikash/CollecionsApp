@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownUp, ChevronDown, Copy, ExternalLink, FileText, Filter, MoreVertical, NotebookText, Phone, Search } from "lucide-react";
+import { ArrowDownUp, ChevronDown, Copy, ExternalLink, FileText, Filter, MoreVertical, NotebookText, Search } from "lucide-react";
 import { toast } from "sonner";
 import Pagination from "@/components/common/Pagination";
 import { daysBetween, getAvatarColor, getInitials, parseISODate, startOfToday } from "@/utils/helpers";
@@ -33,7 +33,7 @@ const COLUMNS = [
   { key: "ptp", label: "PTP STATUS" },
   { key: "date", label: "PTP DATE" },
   { key: "owner", label: "COLLECTOR" },
-  { key: "noteCount", label: "NOTES" },
+  { key: "note", label: "NOTES" },
 ];
 
 function ptpDue(account, today) {
@@ -99,7 +99,7 @@ function RowMenu({ account, onClose, onOpen }) {
   );
 }
 
-export default function WorkbenchTable({ accounts: source = [] }) {
+export default function WorkbenchTable({ accounts: source = [], asOfIso }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [bucket, setBucket] = useState("All");
@@ -111,7 +111,7 @@ export default function WorkbenchTable({ accounts: source = [] }) {
   const [selected, setSelected] = useState(() => new Set());
   const [owners, setOwners] = useState({});
   const [menuFor, setMenuFor] = useState(null);
-  const today = useMemo(() => startOfToday(), []);
+  const today = useMemo(() => (asOfIso && parseISODate(String(asOfIso).slice(0, 10))) || startOfToday(), [asOfIso]);
 
   const accounts = useMemo(() => {
     const totalOverdue = source.reduce((sum, account) => sum + Math.max(account.overdueRaw, 0), 0);
@@ -283,19 +283,17 @@ export default function WorkbenchTable({ accounts: source = [] }) {
                       <button
                         type="button"
                         onClick={() => openAccount(account.id, "notes")}
-                        title={account.note || "No notes"}
-                        className="inline-flex items-center gap-1.5 text-slate-700 hover:text-blue-600"
+                        title={account.note ? `${account.note} — open notes` : "Add a note"}
+                        className="group/note flex max-w-[220px] items-start gap-1.5 text-left text-[12px] text-slate-600 hover:text-blue-600"
                       >
-                        <NotebookText className="h-4 w-4" /> {account.noteCount}
+                        <NotebookText className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                        <span className="line-clamp-2 group-hover/note:underline">{account.note || "Add note"}</span>
                       </button>
                     </td>
                     <td className="px-3 py-3">
                       <div className="relative flex items-center gap-1.5">
                         <button type="button" title="View transactions" aria-label={`View transactions for ${account.customer}`} onClick={() => openAccount(account.id, "transactions")} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50">
                           <FileText className="h-4 w-4" />
-                        </button>
-                        <button type="button" title="Communications" aria-label={`Communications for ${account.customer}`} onClick={() => openAccount(account.id, "communications")} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50">
-                          <Phone className="h-4 w-4" />
                         </button>
                         <button type="button" title="More actions" aria-label={`More actions for ${account.customer}`} onClick={() => setMenuFor((current) => (current === account.id ? null : account.id))} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
                           <MoreVertical className="h-4 w-4" />

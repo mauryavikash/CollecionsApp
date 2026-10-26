@@ -7,6 +7,7 @@ import CollectionCashRecovery from "@/components/collectionsDashboard/Collection
 import CollectionChart from "@/components/collectionsDashboard/CollectionChart";
 import CollectorPerformance from "@/components/collectionsDashboard/CollectorPerformance";
 import { LoadingState } from "@/components/common/LoadingState";
+import WelcomeBanner from "@/components/common/WelcomeBanner";
 import { getDashboard } from "@/app/lib/api";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -120,38 +121,34 @@ export default function DashboardPage() {
       data-has-error={Boolean(error)}
     >
       <div className="mx-auto max-w-[1680px] space-y-4 pr-2 sm:pr-4">
-        <header className="flex flex-row flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-[18px] font-bold leading-5 text-slate-800">
-              {resolvedDashboardData?.title ?? "Collections Dashboard"}
-            </h1>
-            <p className="mt-0.5 text-[10px] text-slate-500">
-              {resolvedDashboardData?.subtitle ?? "Overview of AR, risk, PTP and recovery performance"}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
+        <WelcomeBanner
+          description={resolvedDashboardData?.subtitle ?? "Overview of AR, Risk, PTP and recovery performance"}
+          dateLabel={asOfDate ? `As of ${asOfDate}` : null}
+          actions={
             <button
               type="button"
               onClick={() => {
                 setRefreshing(true);
                 loadHomeData({ force: true });
               }}
-              className="inline-flex h-[30px] items-center gap-1 rounded-md border border-slate-200 bg-white px-3 text-[10px] font-medium text-slate-600 shadow-sm"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing" : "Refresh"}
             </button>
-          </div>
-        </header>
+          }
+        />
 
         <CollectionKpiCard
           kpis={resolvedDashboardData?.kpis ?? []}
           asOfDate={asOfDate}
+          asOfIso={resolvedDashboardData?.asOfDate}
+          forecast={forecast}
         />
 
         <CollectionCashRecovery
           forecast={forecast}
+          asOfIso={resolvedDashboardData?.asOfDate}
           riskAccounts={resolvedDashboardData?.riskAccounts ?? []}
         />
 
