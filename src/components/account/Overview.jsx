@@ -209,7 +209,7 @@ export default function Overview({
         >
           <dl>
             {rows.map((row) => (
-              <div key={row.label} className="flex items-center justify-between gap-3 border-b border-slate-100 py-2.5 text-[12px] last:border-b-0">
+              <div key={row.label} className="flex items-center justify-between gap-3 border-b border-slate-100 py-1.5 text-[12px] last:border-b-0">
                 <dt className="text-slate-500">{row.label}</dt>
                 <dd className="text-right font-medium text-slate-800">
                   {row.badge ? (

@@ -147,7 +147,16 @@ The frontend is designed to support multiple user roles, including:
 # Project Modules
 
 ## Promise To Pay Layout
-The page shows filters and KPI cards first, followed by All Promises cards and the records table. PTP analytics charts appear below the promise records.
+The page shows filters and KPI cards first, followed by All Promises cards and the records table. PTP analytics charts appear below the promise records. KPI cards compare against the previous month (`changeVsPrevMonthPct`).
+
+## Shared KPI Cards and Welcome Banner
+- `src/components/common/KpiCard.jsx` renders every KPI card (gradient border, hover lift, change pill, interactive mini chart with hover tooltip). Comparisons are shown only when the backend provides them.
+- `src/components/common/WelcomeBanner.jsx` is the shimmer welcome banner used on the Dashboard, Collector Workbench and Promise To Pay pages; the page title appears only in the header.
+- Cash Recovery Forecast weeks are labelled with date ranges (including year) computed from the backend `asOfDate`.
+
+## Collector Workbench and Account 360
+- Workbench dates (as-of, days left) use the backend `asOfDate`. Notes come from account data; clicking a note opens `/account?id=<id>&tab=notes`.
+- Account 360 tabs: Overview, Transactions, PTP History, Notes. Notes support add, edit and delete via `ui/notes`.
 
 #
 

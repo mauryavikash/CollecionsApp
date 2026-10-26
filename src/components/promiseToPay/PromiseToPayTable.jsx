@@ -1,5 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { getAvatarColor, getInitials } from "@/utils/helpers";
 export default function PromiseToPayTable({ records = [] }) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,19 +93,18 @@ export default function PromiseToPayTable({ records = [] }) {
                     ● {record.status}
                   </span>
                 </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <b className="mr-1 inline-grid h-5 w-5 place-items-center rounded-full bg-[#214cad] text-[10px] font-semibold text-white">
-                    {record.initials ||
-                      record.owner
-                        ?.split(" ")
-                        ?.map((word) => word[0])
-                        ?.join("")
-                        ?.substring(0, 2)
-                        ?.toUpperCase() ||
-                      "NA"}
-                  </b>
-                  {record.owner}
-                </td>{" "}
+                <td className="px-3 py-3">
+                  {/* Same per-collector avatar colours as the Workbench and PTP cards. */}
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
+                      style={{ backgroundColor: record.avatarColor ?? getAvatarColor(record.owner) }}
+                    >
+                      {record.initials || getInitials(record.owner)}
+                    </span>
+                    <span className="font-medium text-slate-800">{record.owner}</span>
+                  </div>
+                </td>
                 <td className="px-3 py-3">{record.followUp}</td>
               </tr>
             ))}

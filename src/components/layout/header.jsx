@@ -280,10 +280,9 @@ export default function Header({ setIsOpen, isOpen }) {
 
   if (pathname) {
     if (pathname === "/collectionsDashboard") title = "Collections Dashboard";
-    else if (pathname === "/workbench") title = "Workbench";
+    else if (pathname === "/workbench") title = "Collector Workbench";
     else if (pathname === "/promiseToPay") {
       title = "Promise To Pay";
-      subtitle = "Track customer commitments and drive collections performance";
     } else if (pathname === "/account") {
       title = "Account 360";
       subtitle = "Complete view of customer, risk, payments and collector activity";

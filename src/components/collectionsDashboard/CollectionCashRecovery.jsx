@@ -2,6 +2,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
+import { forecastWeekRange } from "@/components/common/dateRanges";
 import {
   Bar,
   BarChart,
@@ -25,10 +28,45 @@ function formatMoney(v) {
 function Panel({ children, className = "" }) {
   return (
     <section
-      className={`rounded-[11px] border border-slate-200 bg-white px-3 py-2.5 shadow-[0_2px_5px_rgba(38,82,144,.08)] ${className}`}
+      className={`rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm ${className}`}
     >
       {children}
     </section>
+  );
+}
+
+/* Two-line X tick: "Wk 1" + "17 Sep – 23 Sep 2026" */
+function WeekTick({ x, y, payload, index, data }) {
+  const row = data?.[index];
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text dy={12} textAnchor="middle" fontSize={11} fontWeight={600} fill="#334155">
+        {payload?.value}
+      </text>
+      {row?.range && (
+        <text dy={26} textAnchor="middle" fontSize={10} fill="#64748b">
+          {row.range}
+        </text>
+      )}
+    </g>
+  );
+}
+
+function ForecastTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload ?? {};
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
+      <div className="font-semibold text-slate-800">{row.week}</div>
+      {row.range && <div className="mb-1 text-[11px] text-slate-500">{row.range}</div>}
+      {payload.map((entry) => (
+        <div key={entry.dataKey} className="flex items-center gap-1.5 text-slate-600">
+          <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: entry.color }} />
+          {entry.dataKey === "actual" ? "Actual" : "Projected"}:
+          <span className="font-semibold text-slate-900">{formatMoney(entry.value)}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -62,6 +100,7 @@ function normalizeRiskAccount(raw) {
 export default function CollectionCashRecovery({
   forecast = [],
   riskAccounts = [],
+  asOfIso,
 }) {
   const [riskPage, setRiskPage] = useState(1);
   const RISK_PAGE_SIZE = 4;
@@ -75,14 +114,22 @@ export default function CollectionCashRecovery({
     return normalizedRisk.slice(start, start + RISK_PAGE_SIZE);
   }, [normalizedRisk, riskPage]);
 
-  const chartData = forecast.map((item) => ({
-    ...item,
-    actual:
-      Number(item.actual) > 0
-        ? Number(item.actual)
-        : null,
-    projected: Number(item.projected) || 0,
-  }));
+  const unitMultiplier = (unit) => (unit === "B" ? 1e9 : unit === "K" ? 1e3 : unit === "M" || unit === undefined ? 1e6 : 1);
+  const chartData = forecast.map((item, index) => {
+    const multiplier = unitMultiplier(item?.unit);
+    const actualRaw = Number(item?.actualRaw ?? Number(item?.actual) * multiplier);
+    const projectedRaw = Number(item?.projectedRaw ?? Number(item?.projected) * multiplier);
+    return {
+      ...item,
+      week: item?.label ?? `Wk ${index + 1}`,
+      range: forecastWeekRange(asOfIso, index),
+      actual: actualRaw > 0 ? actualRaw : null,
+      projected: projectedRaw || 0,
+    };
+  });
+  const forecastTitle = chartData.length && asOfIso
+    ? `${chartData[0].range?.split(" – ")[0]} – ${chartData[chartData.length - 1].range?.split(" – ")[1]}`
+    : null;
 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.2fr)]">
@@ -90,16 +137,16 @@ export default function CollectionCashRecovery({
       <Panel className="min-h-[300px] min-w-0">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-[13px] font-bold">
-              CASH RECOVERY FORECAST
+            <h2 className="text-sm font-bold text-slate-800">
+              Cash Recovery Forecast
             </h2>
 
-            <p className="text-[9px] text-slate-500">
-              Projected vs actual · Next 30 days
+            <p className="mt-0.5 text-xs text-slate-500">
+              Projected vs actual · Next 30 days{forecastTitle ? ` (${forecastTitle})` : ""}
             </p>
           </div>
 
-          <select className="h-[26px] appearance-none rounded-md border border-slate-200 bg-white px-2 pr-6 text-[10px] text-slate-600 outline-none">
+          <select className="h-8 appearance-none rounded-lg border border-slate-200 bg-white px-2 pr-6 text-xs text-slate-600 outline-none">
             <option>Next 30 days</option>
             <option>Next 60 days</option>
             <option>Next 90 days</option>
@@ -107,9 +154,9 @@ export default function CollectionCashRecovery({
         </div>
 
         <div
-          className="h-[250px] mt-2"
+          className="h-[270px] mt-2"
           role="img"
-          aria-label="Cash recovery forecast through month two"
+          aria-label="Cash recovery forecast by week"
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -119,40 +166,33 @@ export default function CollectionCashRecovery({
               margin={{
                 top: 10,
                 right: 10,
-                left: 10,
-                bottom: 5,
+                left: 0,
+                bottom: 0,
               }}
             >
               <Tooltip
                 cursor={{ fill: "rgba(34,101,189,0.06)" }}
-                formatter={(value, name) => [
-                  formatMoney(value),
-                  name === "actual" ? "Actual" : "Projected",
-                ]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
-                  fontSize: "12px",
-                }}
+                content={<ForecastTooltip />}
               />
 
               <Legend
-                verticalAlign="top"
-                align="right"
+                verticalAlign="bottom"
+                align="center"
                 iconType="square"
-                iconSize={8}
-                wrapperStyle={{ fontSize: "10px", paddingBottom: "8px" }}
-                formatter={(value) => (value === "actual" ? "Actual" : "Projected")}
+                iconSize={9}
+                wrapperStyle={{ fontSize: "12px", paddingTop: "6px" }}
+                formatter={(value) => (
+                  <span className="text-slate-600">{value === "actual" ? "Actual" : "Projected"}</span>
+                )}
               />
 
               <XAxis
-                dataKey="label"
+                dataKey="week"
                 tickLine={false}
                 axisLine={false}
-                tick={{
-                  fontSize: 10,
-                  fill: "#64748b",
-                }}
+                interval={0}
+                height={36}
+                tick={<WeekTick data={chartData} />}
               />
 
               <YAxis
@@ -164,7 +204,7 @@ export default function CollectionCashRecovery({
                 tickLine={false}
                 axisLine={false}
                 tick={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fill: "#64748b",
                 }}
                 width={60}
@@ -172,13 +212,13 @@ export default function CollectionCashRecovery({
 
               <Bar
                 dataKey="projected"
-                fill="#b7daf8"
+                fill="#93bbff"
                 radius={[4, 4, 0, 0]}
               />
 
               <Bar
                 dataKey="actual"
-                fill="#2265bd"
+                fill="#2865dc"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -189,17 +229,17 @@ export default function CollectionCashRecovery({
 {/* TOP RISK ACCOUNTS */}
 <Panel className="min-h-[300px] min-w-0 flex flex-col">
   <div className="mb-3 flex items-center justify-between">
-    <h2 className="text-[13px] font-bold flex items-center gap-1">
-      <span className="text-red-500">&#9888;</span> Top Risk Accounts <span className="text-slate-400">&rsaquo;</span>
+    <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50">
+        <AlertTriangle className="h-4 w-4 text-rose-500" aria-hidden="true" />
+      </span>
+      Top Risk Accounts
     </h2>
-    <button type="button" className="text-[10px] font-semibold text-blue-600 hover:underline">
-      View All &rsaquo;
-    </button>
   </div>
 
   <div className="overflow-hidden rounded-lg border border-slate-200 flex-1 flex flex-col">
     {/* Header */}
-    <div className="grid grid-cols-[56px_minmax(0,1fr)_48px_90px] bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-500 sm:grid-cols-[70px_minmax(0,1fr)_70px_110px]">
+    <div className="grid grid-cols-[56px_minmax(0,1fr)_48px_90px] bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-[70px_minmax(0,1fr)_70px_110px]">
       <div>RISK</div>
       <div>CUSTOMER</div>
       <div className="text-center">DPD</div>
@@ -229,7 +269,7 @@ export default function CollectionCashRecovery({
                   <div className="truncate text-[12px] font-semibold text-slate-800" title={account.customer}>
                     {account.customer}
                   </div>
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-[11px] text-slate-400">
                     {account.dpd} DPD &bull; {account.dpdBucket}
                   </div>
                 </td>
@@ -237,7 +277,7 @@ export default function CollectionCashRecovery({
                   {account.dpd}
                 </td>
                 <td className="w-[90px] px-3 py-3 text-right align-middle sm:w-[110px]">
-                  <div className="text-[14px] font-bold" style={{ color: account.segmentColor || "#f2545b" }}>
+                  <div className="text-[13px] font-bold" style={{ color: account.segmentColor || "#f2545b" }}>
                     {account.overdueAmount}
                   </div>
                 </td>
@@ -250,36 +290,41 @@ export default function CollectionCashRecovery({
       )}
     </div>
 
-    {/* Pagination */}
-    {riskTotalPages > 1 && (
-      <div className="flex items-center justify-center gap-1 border-t border-slate-100 py-2">
-        <button
-          onClick={() => setRiskPage((p) => Math.max(1, p - 1))}
-          disabled={riskPage === 1}
-          className="flex h-6 w-6 items-center justify-center rounded text-[10px] border border-slate-200 disabled:opacity-40"
-        >
-          &lsaquo;
-        </button>
-        {Array.from({ length: riskTotalPages }, (_, i) => i + 1).map((p) => (
-          <button
-            key={p}
-            onClick={() => setRiskPage(p)}
-            className={`flex h-6 w-6 items-center justify-center rounded text-[10px] ${
-              riskPage === p ? "bg-blue-600 text-white" : "border border-slate-200 text-slate-600"
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-        <button
-          onClick={() => setRiskPage((p) => Math.min(riskTotalPages, p + 1))}
-          disabled={riskPage === riskTotalPages}
-          className="flex h-6 w-6 items-center justify-center rounded text-[10px] border border-slate-200 disabled:opacity-40"
-        >
-          &rsaquo;
-        </button>
+    {/* Pagination + View All (bottom right) */}
+    <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-3 py-2">
+      <div className="flex items-center gap-1">
+        {riskTotalPages > 1 && (
+          <>
+            <button
+              onClick={() => setRiskPage((p) => Math.max(1, p - 1))}
+              disabled={riskPage === 1}
+              className="flex h-6 w-6 items-center justify-center rounded text-xs border border-slate-200 disabled:opacity-40"
+            >
+              &lsaquo;
+            </button>
+            {Array.from({ length: riskTotalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setRiskPage(p)}
+                className={`flex h-6 w-6 items-center justify-center rounded text-xs ${
+                  riskPage === p ? "bg-blue-600 text-white" : "border border-slate-200 text-slate-600"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setRiskPage((p) => Math.min(riskTotalPages, p + 1))}
+              disabled={riskPage === riskTotalPages}
+              className="flex h-6 w-6 items-center justify-center rounded text-xs border border-slate-200 disabled:opacity-40"
+            >
+              &rsaquo;
+            </button>
+          </>
+        )}
       </div>
-    )}
+     
+    </div>
   </div>
 </Panel>
     </div>

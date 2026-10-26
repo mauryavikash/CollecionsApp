@@ -1,28 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  CalendarDays,
-  ChevronDown,
-  CircleCheck,
-  Clock3,
-  Coins,
-  Copy,
-  Download,
-  FileText,
-  Info,
-  Mail,
-  NotebookPen,
-  Phone,
-  Star,
-  TriangleAlert,
-  UserRound,
-  Handshake,
-} from "lucide-react";
-import { MiniBars, Sparkline } from "@/components/common/MiniCharts";
+import { useState } from "react";
+import { CalendarDays, CircleCheck, Clock3, Coins, FileText, Star, TriangleAlert } from "lucide-react";
+import KpiCard from "@/components/common/KpiCard";
+import { MONTHS_SHORT, formatCompactMoney, moneyTrendPoints, parseIsoDate } from "@/components/common/dateRanges";
 import { getMetric, monthlyCounts } from "./accountData";
 
 function riskBadgeClass(risk = "") {
@@ -42,101 +23,53 @@ function ptpBadgeClass(ptp = "") {
   return "border-slate-200 bg-slate-50 text-slate-600";
 }
 
-function useOutsideClose(open, setOpen) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!open) return undefined;
-    const handler = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, setOpen]);
-  return ref;
-}
-
-const SENTIMENT_CLASS = {
-  positive: "text-green-600",
-  negative: "text-red-600",
-  neutral: "text-slate-500",
-};
-
-function ChangeLine({ change }) {
-  if (!change) return null;
-  const Arrow = change.direction === "up" ? ArrowUp : change.direction === "down" ? ArrowDown : ArrowRight;
-  return (
-    <p className={`flex flex-wrap items-center gap-x-1 text-[11px] ${SENTIMENT_CLASS[change.sentiment] ?? SENTIMENT_CLASS.neutral}`}>
-      <Arrow className="h-3 w-3 shrink-0" strokeWidth={2.5} />
-      <b className="font-semibold">{change.text}</b>
-      {change.label && <span className="text-slate-500">{change.label}</span>}
-    </p>
-  );
-}
-
-function MetricCard({ metric }) {
-  const Icon = metric.Icon;
-  return (
-    <article className={`flex min-h-[96px] flex-col justify-between rounded-xl border px-3 py-2.5 ${metric.card}`}>
-      <div className="flex items-center gap-2">
-        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${metric.tile}`}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <p className="flex items-center gap-1 text-[12px] font-medium text-slate-700">
-          {metric.label}
-          <span title={metric.tooltip}>
-            <Info className="h-3 w-3 text-slate-400" />
-          </span>
-        </p>
-      </div>
-      <div className="mt-1 flex items-end justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-[22px] font-bold leading-7 text-slate-900">{metric.value}</p>
-          {metric.change ? (
-            <ChangeLine change={metric.change} />
-          ) : (
-            metric.supporting && (
-              <p className={`truncate text-[11px] ${metric.supportingClass ?? "text-slate-500"}`}>{metric.supporting}</p>
-            )
-          )}
-        </div>
-        <div className="shrink-0">
-          {metric.chart === "bars" ? (
-            <MiniBars values={metric.series} color={metric.color} />
-          ) : (
-            <Sparkline values={metric.series} color={metric.color} width={60} height={30} />
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
+const AGING_COLORS = ["#4bc173", "#9bd138", "#facc15", "#fb9337", "#f15a63"];
 
 // Backend metric (account.metrics[]) by id, falling back to a label keyword match.
 function findMetric(account, id, keyword) {
   return (account?.metrics ?? []).find((metric) => metric?.id === id) ?? getMetric(account, keyword);
 }
 
-// "+12.4%" -> "12.4%", "-8 days" -> "8 days"; the arrow shows the direction.
+// "+12.4%" / "+17 days" -> pill text without sign; direction from the backend.
 function buildChange(metric) {
   if (!metric || metric.changePct == null || metric.changePct === "") return null;
   const raw = String(metric.changePct).trim();
+  if (metric.changeDirection === "neutral" || Number.parseFloat(raw) === 0) return null;
   const numeric = Number.parseFloat(raw);
-  const direction =
-    metric.changeDirection ?? (Number.isFinite(numeric) ? (numeric > 0 ? "up" : numeric < 0 ? "down" : "neutral") : "neutral");
+  const up = metric.changeDirection ? metric.changeDirection === "up" : numeric >= 0;
   return {
-    text: raw.replace(/^[+-]/, ""),
-    direction,
-    sentiment: metric.changeSentiment ?? "neutral",
-    label: metric.changeLabel ?? "vs last month",
+    change: { text: raw.replace(/^[+-]/, ""), up },
+    positive: metric.changeSentiment ? metric.changeSentiment !== "negative" : !up,
   };
 }
 
-function seriesOrFallback(metric, fallback) {
-  const values = Array.isArray(metric?.values) ? metric.values.map(Number).filter(Number.isFinite) : [];
-  return values.length ? values : fallback;
+function comparisonLabel(metric) {
+  if (!metric || metric.changePct == null || metric.changePct === "") return "";
+  const label = metric.changeLabel ?? "vs last month";
+  const raw = String(metric.changePct).trim();
+  return metric.changeDirection === "neutral" || Number.parseFloat(raw) === 0 ? `No change ${label}` : label;
 }
 
-function buildMetrics(account, aging, transactions, ptpHistory, ptpTotal) {
+function seriesValues(metric) {
+  return Array.isArray(metric?.values) ? metric.values.map(Number).filter(Number.isFinite) : [];
+}
+
+/* Month labels ending at the as-of month: ["Apr 2026", …, "Sep 2026"]. */
+function monthLabels(asOfIso, count) {
+  const end = parseIsoDate(asOfIso);
+  return Array.from({ length: count }, (_, index) => {
+    if (!end) return `Month ${index + 1}`;
+    const date = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - (count - 1 - index), 1));
+    return `${MONTHS_SHORT[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  });
+}
+
+function previousText(metric) {
+  if (metric?.previousValue == null || metric.previousValue === "") return null;
+  return `${metric.previousValue} ${metric.previousLabel ?? "previous month"}`;
+}
+
+function buildMetrics({ account, aging, transactions, ptpHistory, ptpTotal, asOfIso }) {
   const overdueInvoices = transactions.filter((item) => item.status === "Overdue");
   const overdueMetric = findMetric(account, "overdue", "overdue");
   const arMetric = findMetric(account, "total-ar", "total ar");
@@ -147,99 +80,135 @@ function buildMetrics(account, aging, transactions, ptpHistory, ptpTotal) {
   const oldestBucket = [...aging].reverse().find((bucket) => bucket.percent > 0);
   const brokenCount = ptpHistory.filter((item) => String(item?.status).toLowerCase() === "broken").length;
   const fulfilledCount = ptpHistory.filter((item) => String(item?.status).toLowerCase() === "fulfilled").length;
-  const agingAmounts = aging.map((bucket) => bucket.amountRaw);
-  const agingPercents = aging.map((bucket) => bucket.percent);
   const promiseCount = ptpTotal ?? ptpHistory.length;
+
+  const agingChart = {
+    type: "bar",
+    color: "#ef4444",
+    data: aging.map((bucket, index) => ({
+      label: bucket.label ?? bucket.short,
+      value: Math.max(Number(bucket.amountRaw) || 0, 0),
+      display: `${formatCompactMoney(bucket.amountRaw)} (${bucket.percent}%)`,
+      color: AGING_COLORS[index % AGING_COLORS.length],
+    })),
+  };
+
+  const arValues = seriesValues(arMetric);
+  const agingValues = seriesValues(agingMetric);
+  const monthlyChart = (metric, status, color) => {
+    const values = seriesValues(metric);
+    const series = values.length ? values : monthlyCounts(ptpHistory, status);
+    const labels = monthLabels(asOfIso, series.length);
+    return {
+      type: "bar",
+      color,
+      data: series.map((value, index) => ({ label: labels[index], value, display: `${value} promise${value === 1 ? "" : "s"}` })),
+    };
+  };
+
+  const dpdChart =
+    dpdMetric?.previousValueRaw != null && dpdMetric?.valueRaw != null
+      ? {
+          type: "bar",
+          color: "#8b5cf6",
+          data: [
+            { label: dpdMetric.previousLabel ?? "Previous month", value: Number(dpdMetric.previousValueRaw), color: "#c4b5fd" },
+            { label: "Current", value: Number(dpdMetric.valueRaw), color: "#8b5cf6" },
+          ].map((row) => ({ ...row, display: `${row.value} days` })),
+        }
+      : null;
 
   return [
     {
       label: "Overdue Amount",
       value: overdueMetric?.value ?? "-",
-      change: buildChange(overdueMetric),
-      supporting: `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? "" : "s"}`,
+      ...buildChange(overdueMetric),
+      changeLabel: comparisonLabel(overdueMetric),
+      footnote: previousText(overdueMetric) ?? `${overdueInvoices.length} overdue invoices`,
       tooltip: "Total past-due balance across open invoices",
       Icon: Coins,
-      tile: "bg-red-500 text-white",
-      card: "border-red-100 bg-red-50/60",
       color: "#ef4444",
-      series: agingAmounts,
+      chart: agingChart,
     },
     {
       label: "Total AR",
       value: arMetric?.value ?? "-",
-      change: buildChange(arMetric),
-      supporting: `${transactions.length} recent transactions`,
+      ...buildChange(arMetric),
+      changeLabel: comparisonLabel(arMetric),
+      footnote: previousText(arMetric) ?? `${transactions.length} recent transactions`,
       tooltip: "Total open accounts receivable",
       Icon: FileText,
-      tile: "bg-blue-500 text-white",
-      card: "border-blue-100 bg-blue-50/60",
       color: "#3b82f6",
-      chart: "bars",
-      series: seriesOrFallback(arMetric, agingAmounts),
+      chart: arValues.length > 1
+        ? {
+            type: "area",
+            color: "#3b82f6",
+            data: moneyTrendPoints(arMetric, asOfIso),
+          }
+        : null,
     },
     {
       label: "Days Past Due",
       value: dpdMetric?.value ?? "-",
-      change: buildChange(dpdMetric),
-      supporting: "Oldest open invoice",
+      ...buildChange(dpdMetric),
+      changeLabel: comparisonLabel(dpdMetric),
+      footnote: previousText(dpdMetric) ?? "Oldest open invoice",
       tooltip: "Days past due of the oldest open invoice",
       Icon: CalendarDays,
-      tile: "bg-violet-500 text-white",
-      card: "border-violet-100 bg-violet-50/60",
       color: "#8b5cf6",
-      series: overdueInvoices.map((item) => item.ageDays).sort((a, b) => a - b),
+      chart: dpdChart,
     },
     {
       label: "Aging Bucket",
       value: agingMetric?.value ?? "-",
-      supporting: agingMetric?.context ?? (oldestBucket ? `${oldestBucket.percent}% of AR in ${oldestBucket.short}` : ""),
-      supportingClass: "font-semibold text-orange-600",
+      changeLabel: agingMetric?.context ?? (oldestBucket ? `${oldestBucket.percent}% of AR in ${oldestBucket.short}` : ""),
+      footnote: "Share of overdue by bucket",
       tooltip: "Aging bucket of the oldest open invoice",
       Icon: Clock3,
-      tile: "bg-orange-500 text-white",
-      card: "border-orange-100 bg-orange-50/60",
       color: "#f97316",
-      chart: "bars",
-      series: seriesOrFallback(agingMetric, agingPercents),
+      chart: agingValues.length
+        ? {
+            type: "bar",
+            color: "#f97316",
+            data: agingValues.map((value, index) => ({
+              label: agingMetric?.labels?.[index] ?? aging[index]?.label ?? `Bucket ${index + 1}`,
+              value,
+              display: `${value}% of overdue`,
+              color: AGING_COLORS[index % AGING_COLORS.length],
+            })),
+          }
+        : null,
     },
     {
       label: "Broken PTPs",
       value: brokenMetric?.value ?? String(brokenCount),
-      change: buildChange(brokenMetric),
-      supporting: `of ${promiseCount} promises`,
+      ...buildChange(brokenMetric),
+      changeLabel: comparisonLabel(brokenMetric),
+      footnote: `of ${promiseCount} promises`,
       tooltip: "Promises to pay that were not honored",
       Icon: TriangleAlert,
-      tile: "bg-red-500 text-white",
-      card: "border-red-100 bg-red-50/40",
       color: "#ef4444",
-      chart: "bars",
-      series: seriesOrFallback(brokenMetric, monthlyCounts(ptpHistory, "broken")),
+      chart: monthlyChart(brokenMetric, "broken", "#ef4444"),
     },
     {
       label: "Fulfilled PTPs",
       value: fulfilledMetric?.value ?? String(fulfilledCount),
-      change: buildChange(fulfilledMetric),
-      supporting: `of ${promiseCount} promises`,
+      ...buildChange(fulfilledMetric),
+      changeLabel: comparisonLabel(fulfilledMetric),
+      footnote: `of ${promiseCount} promises`,
       tooltip: "Promises to pay honored in full",
       Icon: CircleCheck,
-      tile: "bg-green-500 text-white",
-      card: "border-green-100 bg-green-50/60",
       color: "#16a34a",
-      chart: "bars",
-      series: seriesOrFallback(fulfilledMetric, monthlyCounts(ptpHistory, "fulfilled")),
+      chart: monthlyChart(fulfilledMetric, "fulfilled", "#16a34a"),
     },
   ];
 }
 
-export default function Account360Detail({ account = {}, industry, aging = [], transactions = [], ptpHistory = [], ptpTotal, onAction }) {
-  const [actionsOpen, setActionsOpen] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
+export default function Account360Detail({ account = {}, industry, aging = [], transactions = [], ptpHistory = [], ptpTotal, asOfDate }) {
   const favoriteKey = `account-favorite-${account.id}`;
   const [favorite, setFavorite] = useState(
     () => typeof window !== "undefined" && localStorage.getItem(favoriteKey) === "true",
   );
-  const actionsRef = useOutsideClose(actionsOpen, setActionsOpen);
-  const contactRef = useOutsideClose(contactOpen, setContactOpen);
 
   const toggleFavorite = () => {
     const next = !favorite;
@@ -247,131 +216,66 @@ export default function Account360Detail({ account = {}, industry, aging = [], t
     localStorage.setItem(favoriteKey, String(next));
   };
 
-  const metrics = buildMetrics(account, aging, transactions, ptpHistory, ptpTotal);
-  const actions = [
-    { id: "transactions", label: "View transactions", Icon: FileText },
-    { id: "ptp", label: "View PTP history", Icon: Handshake },
-    { id: "notes", label: "Open notes", Icon: NotebookPen },
-    { id: "export", label: "Export transactions", Icon: Download },
-    { id: "copy", label: "Copy account #", Icon: Copy },
-  ];
-  const contactRows = [
-    { Icon: UserRound, value: account.contact, href: null },
-    { Icon: Phone, value: account.phone, href: account.phone ? `tel:${account.phone}` : null },
-    { Icon: Mail, value: account.email, href: account.email ? `mailto:${account.email}` : null },
-  ].filter((row) => row.value);
+  const metrics = buildMetrics({ account, aging, transactions, ptpHistory, ptpTotal, asOfIso: asOfDate });
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_2px_6px_rgba(38,82,144,.08)]">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 gap-3">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-blue-600 text-[20px] font-bold text-white">
-            {account.initials}
-          </span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[22px] font-bold text-slate-900">{account.name}</h1>
-              <button
-                type="button"
-                onClick={toggleFavorite}
-                aria-pressed={favorite}
-                aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-                className="text-slate-400 hover:text-amber-500"
-              >
-                <Star className={`h-5 w-5 ${favorite ? "fill-amber-400 text-amber-500" : ""}`} />
-              </button>
-              {account.risk && (
-                <span className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${riskBadgeClass(account.riskSegment ?? account.risk)}`}>
-                  {account.risk}
-                </span>
-              )}
-              {account.ptp && (
-                <span className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${ptpBadgeClass(account.ptpStatus ?? account.ptp)}`}>
-                  {account.ptp}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 flex flex-wrap items-center gap-x-3 text-[12px] text-slate-600">
-              <span>Acct #{account.accountNumber ?? account.id}</span>
-              {industry && (
-                <>
-                  <span className="h-3 border-l border-slate-300" />
-                  <span>Industry: {industry}</span>
-                </>
-              )}
-              <span className="h-3 border-l border-slate-300" />
-              <span>Terms: {account.terms || "-"}</span>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative" ref={actionsRef}>
+    <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <div className="flex min-w-0 gap-3">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-blue-600 text-[20px] font-bold text-white">
+          {account.initials}
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900">{account.name}</h1>
             <button
               type="button"
-              onClick={() => setActionsOpen((open) => !open)}
-              aria-expanded={actionsOpen}
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-[13px] font-semibold text-blue-700 hover:bg-slate-50"
+              onClick={toggleFavorite}
+              aria-pressed={favorite}
+              aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+              className="text-slate-400 hover:text-amber-500"
             >
-              Actions <ChevronDown className="h-4 w-4" />
+              <Star className={`h-5 w-5 ${favorite ? "fill-amber-400 text-amber-500" : ""}`} />
             </button>
-            {actionsOpen && (
-              <ul className="absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                {actions.map(({ id, label, Icon }) => (
-                  <li key={id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActionsOpen(false);
-                        onAction?.(id);
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-slate-700 hover:bg-slate-50"
-                    >
-                      <Icon className="h-4 w-4 text-slate-500" /> {label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {account.risk && (
+              <span className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${riskBadgeClass(account.riskSegment ?? account.risk)}`}>
+                {account.risk}
+              </span>
+            )}
+            {account.ptp && (
+              <span className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${ptpBadgeClass(account.ptpStatus ?? account.ptp)}`}>
+                {account.ptp}
+              </span>
             )}
           </div>
-          <div className="relative" ref={contactRef}>
-            <button
-              type="button"
-              onClick={() => setContactOpen((open) => !open)}
-              aria-expanded={contactOpen}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-blue-700"
-            >
-              <Mail className="h-4 w-4" /> Contact
-            </button>
-            {contactOpen && (
-              <div className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 text-[12px] shadow-lg">
-                {contactRows.length ? (
-                  <ul className="space-y-2">
-                    {contactRows.map(({ Icon, value, href }) => (
-                      <li key={value} className="flex items-center gap-2 text-slate-700">
-                        <Icon className="h-4 w-4 text-slate-400" />
-                        {href ? (
-                          <a href={href} className="text-blue-600 hover:underline">
-                            {value}
-                          </a>
-                        ) : (
-                          value
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-slate-500">No contact details are on file for this account.</p>
-                )}
-              </div>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-slate-600">
+            <span>Acct #{account.accountNumber ?? account.id}</span>
+            {industry && (
+              <>
+                <span className="h-3 border-l border-slate-300" />
+                <span>Industry: {industry}</span>
+              </>
             )}
-          </div>
+            <span className="h-3 border-l border-slate-300" />
+            <span>Terms: {account.terms || "-"}</span>
+          </p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+      <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {metrics.map((metric) => (
-          <MetricCard key={metric.label} metric={metric} />
+          <KpiCard
+            key={metric.label}
+            label={metric.label}
+            value={metric.value}
+            icon={metric.Icon}
+            accent={metric.color}
+            change={metric.change}
+            changePositive={metric.positive}
+            changeLabel={metric.changeLabel}
+            chart={metric.chart}
+            footnote={metric.footnote}
+            title={metric.tooltip}
+          />
         ))}
       </div>
     </section>
