@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import { forecastWeekRange } from "@/components/common/dateRanges";
+import { monthWeekRange } from "@/components/common/dateRanges";
 import {
   Bar,
   BarChart,
@@ -35,7 +35,7 @@ function Panel({ children, className = "" }) {
   );
 }
 
-/* Two-line X tick: "Wk 1" + "17 Sep – 23 Sep 2026" */
+/* Two-line X tick: "Wk 1" + "01 Aug – 04 Aug" */
 function WeekTick({ x, y, payload, index, data }) {
   const row = data?.[index];
   return (
@@ -122,14 +122,11 @@ export default function CollectionCashRecovery({
     return {
       ...item,
       week: item?.label ?? `Wk ${index + 1}`,
-      range: forecastWeekRange(asOfIso, index),
+      range: monthWeekRange(asOfIso, index),
       actual: actualRaw > 0 ? actualRaw : null,
       projected: projectedRaw || 0,
     };
   });
-  const forecastTitle = chartData.length && asOfIso
-    ? `${chartData[0].range?.split(" – ")[0]} – ${chartData[chartData.length - 1].range?.split(" – ")[1]}`
-    : null;
 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.2fr)]">
@@ -142,7 +139,7 @@ export default function CollectionCashRecovery({
             </h2>
 
             <p className="mt-0.5 text-xs text-slate-500">
-              Projected vs actual · Next 30 days{forecastTitle ? ` (${forecastTitle})` : ""}
+              Projected vs actual
             </p>
           </div>
 
