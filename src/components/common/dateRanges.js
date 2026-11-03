@@ -23,6 +23,25 @@ export function formatRange(start, end) {
   return `${formatDay(start)} – ${formatDay(end, true)}`;
 }
 
+/* Fixed calendar-month week slices (Wk 1..Wk 5):
+   01–04, 05–11, 12–18, 19–25, 26–end of month.
+   The month is the last full month before the as-of date
+   (as-of 17 Sep 2026 -> Aug 2026). Returns "01 Aug – 04 Aug". */
+const MONTH_WEEK_DAYS = [[1, 4], [5, 11], [12, 18], [19, 25], [26, 31]];
+
+export function monthWeekRange(asOfIso, index) {
+  const asOf = parseIsoDate(asOfIso);
+  const slice = MONTH_WEEK_DAYS[index];
+  if (!asOf || !slice) return null;
+  const year = asOf.getUTCFullYear();
+  const month = asOf.getUTCMonth() - 1; // previous month; Date.UTC handles Jan -> Dec of prior year
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const start = new Date(Date.UTC(year, month, slice[0]));
+  const end = new Date(Date.UTC(year, month, Math.min(slice[1], lastDay)));
+  const fmt = (d) => `${String(d.getUTCDate()).padStart(2, "0")} ${MONTHS_SHORT[d.getUTCMonth()]}`;
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
 /* Forecast week i covers 7 days starting at the as-of date + 7·i. */
 export function forecastWeekRange(asOfIso, index) {
   const start = parseIsoDate(asOfIso);

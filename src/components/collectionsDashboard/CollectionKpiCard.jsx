@@ -4,7 +4,7 @@ import { AlertTriangle, ChartColumnIncreasing, Coins, Handshake, Users } from "l
 import KpiCard, { parseChange } from "@/components/common/KpiCard";
 import {
   addDays,
-  forecastWeekRange,
+  monthWeekRange,
   formatCompactMoney,
   formatDay,
   moneyTrendPoints,
@@ -75,7 +75,7 @@ function buildChart(metric, { asOfIso, forecast }) {
           data: forecast.map((week, index) => {
             const raw = Number(week?.projectedRaw ?? Number(week?.projected) * 1e6);
             return {
-              label: `${week?.label ?? `Wk ${index + 1}`} · ${forecastWeekRange(asOfIso, index) ?? ""}`,
+              label: `${week?.label ?? `Wk ${index + 1}`} · ${monthWeekRange(asOfIso, index) ?? ""}`,
               value: raw,
               display: `${formatCompactMoney(raw, 2)} projected`,
               color: index === 0 ? "#0b57d0" : "#93bbff",
